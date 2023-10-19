@@ -48,7 +48,6 @@ passwordLabel = Label(tkWindow,text="Password").grid(row=5, column=1)
 password = StringVar()
 passwordEntry = Entry(tkWindow, textvariable=password, show='*').grid(row=5, column=2)  
 
-#whats going on here !
 validateLogin = partial(validateLogin, username, password)
 
 # Empty Space
