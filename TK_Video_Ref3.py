@@ -1,14 +1,8 @@
-# Python program to open the 
-# camera in Tkinter 
-# Import the libraries, 
-# tkinter, cv2, Image and ImageTk 
-
-from tkinter import *
-import cv2 
-import PIL as pillow
-from PIL import Image, ImageTk 
-import time
-import numpy as np
+from tkinter import * #gui
+import cv2 #opencv_python
+from PIL import Image, ImageTk #put the image into tkinter
+import time #wait
+import numpy as np #np.zeros
 
 # Define a video capture object 
 vid = cv2.VideoCapture(0) 
