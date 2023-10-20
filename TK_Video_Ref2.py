@@ -7,17 +7,26 @@ from tkinter import *
 import cv2 
 import PIL as pillow
 from PIL import Image, ImageTk 
-import numpy
+import time
+import numpy as np
 
 # Define a video capture object 
 vid = cv2.VideoCapture(0) 
 
-# Declare the width and height in variables 
-width, height = 800, 600
+#declare w h
+w = 1280.0/2 
+h = 720.0/2
+# Try to set capture to desired (w,h)
+print("setting resolution", w, h)
+vid.set(cv2.CAP_PROP_FRAME_WIDTH, w)
+vid.set(cv2.CAP_PROP_FRAME_HEIGHT, h)
 
-# Set the width and height 
-vid.set(cv2.CAP_PROP_FRAME_WIDTH, width) 
-vid.set(cv2.CAP_PROP_FRAME_HEIGHT, height) 
+# Retrieve actual size (w,h)
+w = int( vid.get(cv2.CAP_PROP_FRAME_WIDTH)  /2)
+h = int( vid.get(cv2.CAP_PROP_FRAME_HEIGHT) /2)
+print("final resolution", w, h)
+
+time.sleep(2)
 
 # Create a GUI app 
 app = Tk() 
@@ -40,12 +49,18 @@ def open_camera():
     # Capture the video frame by frame 
     _, frame = vid.read() 
   
-    # Convert image from one color space to other 
-    opencv_image = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY) 
+    ret, frame = vid.read()    
+    if ret:
+        #cv2.imshow('frame',frame)
+        imgIn = cv2.resize(frame, (w, h), interpolation=cv2.INTER_AREA)
 
-  
+        #imgOut = imgIn * (0, 1, 1.25)
+        imgOut =  cv2.Canny(imgIn, 100, 100)
+            
+        imgOut = np.clip(imgOut, 0.0, 255.0).astype(np.uint8)
+
     # Capture the latest frame and transform to image 
-    captured_image = Image.fromarray(opencv_image) 
+    captured_image = Image.fromarray(imgOut) 
   
     # Convert captured image to photoimage 
     photo_image = ImageTk.PhotoImage(image=captured_image) 

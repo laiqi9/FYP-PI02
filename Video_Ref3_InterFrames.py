@@ -49,8 +49,7 @@ print("final resolution", w, h)
 # Create Reference Image, set as black
 imgRef = np.zeros((h, w, 3), dtype = "uint8")
 
-
-imgBackground = cv2.imread('./images/paris.bmp')
+imgBackground = cv2.imread('Untitled.png')
 imgBackground = cv2.resize(imgBackground, (w, h), interpolation=cv2.INTER_AREA)
 cv2.imshow('imgBackground',imgBackground) 
 

@@ -40,8 +40,8 @@ def open_camera():
     # Capture the video frame by frame 
     _, frame = vid.read() 
   
-    # Convert image from one color space to other 
-    opencv_image = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY) 
+   #image processing here
+    opencv_image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB) 
 
   
     # Capture the latest frame and transform to image 

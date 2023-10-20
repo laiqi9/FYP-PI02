@@ -4,6 +4,10 @@ import PIL as pillow
 from PIL import Image, ImageTk 
 from functools import partial
 
+#define password and username
+passwordEntry = 'admin'
+usernameEntry = 'admin'
+access = passwordEntry and usernameEntry
 
 # Window
 tkWindow = Tk()  
@@ -22,12 +26,11 @@ vid.set(cv2.CAP_PROP_FRAME_HEIGHT, height)
 
 # Empty Space
 SpaceTop = Label(tkWindow, text="                              ").grid(row=3, column=0)
-SpaceTop.pack()
 
 # Username label and text entry box
 usernameLabel = Label(tkWindow, text="User Name").grid(row=4, column=1)
 username = StringVar()
-usernameEntry = Entry(tkWindow, textvariable=username).grid(row=4, column=2)  
+usernameEntry = Entry(tkWindow, textvariable=username).grid(row=4, column=2) 
 
 # Password label and password entry box
 passwordLabel = Label(tkWindow,text="Password").grid(row=5, column=1)  
@@ -38,7 +41,7 @@ def validateLogin():
   # Capture the video frame by frame 
   _, frame = vid.read() 
 
-  # Convert image from one color space to other 
+    # Convert image from one color space to other 
   opencv_image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGBA) 
 
   # Capture the latest frame and transform to image 
