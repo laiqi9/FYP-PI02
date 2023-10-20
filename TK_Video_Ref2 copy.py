@@ -3,6 +3,7 @@
 # Import the libraries, 
 # tkinter, cv2, Image and ImageTk 
 
+#import keyboard
 from tkinter import *
 import cv2 
 import PIL as pillow
@@ -28,7 +29,7 @@ print("final resolution", w, h)
 
 time.sleep(2)
 
-global imgRef 
+global imgRef
 imgRef = np.zeros((h, w, 3), dtype = "uint8")
 
 # Create a GUI app 
@@ -36,7 +37,11 @@ app = Tk()
 
 # Bind the app with Escape keyboard to 
 # quit app whenever pressed 
-app.bind('<Escape>', lambda e: app.quit()) 
+app.bind('<Escape>', lambda e: quitting()) 
+
+def quitting():
+    app.quit()
+    vid.release()
 
 # Create a label and display it on app 
 label_widget = Label(app)
@@ -65,15 +70,13 @@ def open_camera(imgRef):
     # Capture the video frame by frame 
     _, frame = vid.read() 
   
-    ret, frame = vid.read()    
-
+    ret, frame = vid.read()  
+    
+    imgIn = cv2.resize(frame, (w, h), interpolation=cv2.INTER_AREA)
     imgIn = cv2.cvtColor(imgIn, cv2.COLOR_BGR2RGB) 
     
     if ret: 
         #cv2.imshow('frame',frame)
-        
-        imgIn = cv2.resize(frame, (w, h), interpolation=cv2.INTER_AREA)
-
         imgGray = cv2.cvtColor(imgIn, cv2.COLOR_BGR2GRAY)    
         imgGray = cv2.cvtColor(imgGray, cv2.COLOR_GRAY2BGR) # convert back to 3 channels
         #cv2.imshow('imgGray',imgGray)    
@@ -94,12 +97,16 @@ def open_camera(imgRef):
     
         #imgMask = cv2.cvtColor( (result*255).astype(np.uint8), cv2.COLOR_GRAY2BGR) # convert back to 3 channels
 
-        key = cv2.waitKey(1)
-        if (key & 0xFF == ord('a')): imgRef =   imgIn.copy()
+        '''key = cv2.waitKey(1)
+        if (key & keyboard.is_press('a')):
+            imgRef=imgIn.copy()'''
+        
+        app.bind('<A>', lambda e: copyy()) 
 
         # Layout and Display Output Windows    
         imgLayout = concat_vh( [[imgIn, imgGray],
                                 [imgRef, imgIn]])
+        
         
 
 
