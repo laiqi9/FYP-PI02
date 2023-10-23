@@ -67,12 +67,12 @@ def open_camera(imgRef):
   
     ret, frame = vid.read()    
 
-    imgIn = cv2.cvtColor(imgIn, cv2.COLOR_BGR2RGB) 
+    imgIn = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB) 
     
     if ret: 
         #cv2.imshow('frame',frame)
         
-        imgIn = cv2.resize(frame, (w, h), interpolation=cv2.INTER_AREA)
+        imgIn = cv2.resize(imgIn, (w, h), interpolation=cv2.INTER_AREA)
 
         imgGray = cv2.cvtColor(imgIn, cv2.COLOR_BGR2GRAY)    
         imgGray = cv2.cvtColor(imgGray, cv2.COLOR_GRAY2BGR) # convert back to 3 channels

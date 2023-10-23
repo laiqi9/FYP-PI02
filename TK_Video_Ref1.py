@@ -34,9 +34,9 @@ label_widget.pack()
 def open_camera(): 
   
     # Capture the video frame by frame 
-    _, frame = vid.read() 
+    ret, frame = vid.read() 
   
-   #image processing here, MUST BGR2RGB
+    #image processing here, MUST BGR2RGB
     opencv_image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
     # Capture the latest frame and transform to image 
