@@ -1,15 +1,14 @@
-# Python program to open the 
-# camera in Tkinter 
-# Import the libraries, 
-# tkinter, cv2, Image and ImageTk 
+from tkinter import * #gui
+import cv2 #opencv_python
+from PIL import Image, ImageTk #put the image into tkinter
+import time #wait
+import numpy as np #np.zeros
 
-from tkinter import *
-import cv2 
-import PIL as pillow
-from PIL import Image, ImageTk 
-import numpy
-
-# Define a video capture object 
+# Setup Camera Capture:
+# 1. Internal Webcam    
+#cap = cv2.VideoCapture(0) # Internal Webcam
+# 2. if you are using IP camera
+#cap = cv2.VideoCapture("rtsp://admin:admin@192.168.0.102:554/11") 
 vid = cv2.VideoCapture(0) 
 
 # Declare the width and height in variables 
@@ -19,31 +18,27 @@ width, height = 800, 600
 vid.set(cv2.CAP_PROP_FRAME_WIDTH, width) 
 vid.set(cv2.CAP_PROP_FRAME_HEIGHT, height) 
 
-# Create a GUI app 
-app = Tk() 
+# Create the window
+app = Tk()
 
 # Bind the app with Escape keyboard to 
-# quit app whenever pressed 
+#one version of key bind, quit when escape
 app.bind('<Escape>', lambda e: app.quit()) 
 
-# Create a label and display it on app 
+# Create a label and display it on app, empty to start
 label_widget = Label(app) 
 label_widget.pack() 
 
 # Create a function to open camera and 
 # display it in the label_widget on app 
-
-
-
 def open_camera(): 
   
     # Capture the video frame by frame 
     _, frame = vid.read() 
   
-   #image processing here
-    opencv_image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB) 
+   #image processing here, MUST BGR2RGB
+    opencv_image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
-  
     # Capture the latest frame and transform to image 
     captured_image = Image.fromarray(opencv_image) 
   
