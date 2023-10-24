@@ -15,14 +15,12 @@ class App:
     self.canvas = tkinter.Canvas(window, width = self.vid.width, height=self.vid.height)
     self.canvas.pack()
 
-    self.btn_snapshot=tkinter.Button(window, text="snapshot", width=50, command=self.snapshot)
+    self.btn_snapshot=tkinter.Button(window, text="snapshot", width=20, command=self.snapshot)
     self.btn_snapshot.pack(anchor=tkinter.CENTER, expand=True)
 
     #after called once, update auto called
     self.delay = 15
     self.update()
-
-    self.bind('<Escape>', lambda e: self.quitting()) 
 
     self.window.mainloop()
 
@@ -37,12 +35,6 @@ class App:
       self.canvas.create_image(0, 0, image=self.photo, ancho=tkinter.NW)
     
     self.window.after(self.delay, self.update)
-
-def quitting():
-  cap=cv2.VideoCapture(0)
-  cap.release()
-  cv2.destroyAllWindows()
-  App.quit()
 
 class MyVideoCapture:
   def __init__(self, video_source=0):
@@ -59,6 +51,8 @@ class MyVideoCapture:
   def __del__(self):
     if self.vid.isOpened():
       self.vid.release()
+      cv2.destroyAllWindows()
+      print("Stream ended")
       
   def get_frame(self):
      if self.vid.isOpened():
