@@ -108,12 +108,14 @@ def open_camera(imgRef):
   
     # Configure image in the label 
     label_widget.configure(image=photo_image) 
+
+    print("loop")
   
     # Repeat the same process after every 10 seconds 
     label_widget.after(10, lambda: open_camera(imgRef)) 
 
 def dupe():
-    global imgIn
+    global imgIn, imgRef
     imgRef=imgIn.copy()
     open_camera(imgRef)
     print("screaming")
