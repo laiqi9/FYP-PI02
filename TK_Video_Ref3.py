@@ -28,7 +28,6 @@ print("final resolution", w, h)
 
 time.sleep(2)
 
-global imgRef 
 imgRef = np.zeros((h, w, 3), dtype = "uint8")
 
 # Create a GUI app 
@@ -37,12 +36,11 @@ app = Tk()
 # Bind the app with Escape keyboard to 
 # quit app whenever pressed 
 app.bind('<Escape>', lambda e: app.quit()) 
+app.bind('a', lambda e: dupe())
 
 # Create a label and display it on app 
 label_widget = Label(app)
-another_widget = Label(app)
 label_widget.pack()
-another_widget.pack()
 # Create a function to open camera and 
 # display it in the label_widget on app 
 
@@ -62,11 +60,10 @@ def concat_vh(list_2d):
 
 def open_camera(imgRef): 
   
-    # Capture the video frame by frame 
-    _, frame = vid.read() 
-  
+    # Capture the video frame by frame  
     ret, frame = vid.read()    
 
+    global imgIn
     imgIn = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB) 
     
     if ret: 
@@ -90,12 +87,9 @@ def open_camera(imgRef):
         imgMask3 = cv2.cvtColor(imgMask.astype(np.uint8), cv2.COLOR_GRAY2BGR).astype(np.uint8)
         #imgComp = imgIn * (cv2.cvtColor(imgMask, cv2.COLOR_GRAY2BGR).astype(np.uint8))
         #cv2.imshow("imgComp",imgComp.astype(np.uint8))
-        
+                
     
-        #imgMask = cv2.cvtColor( (result*255).astype(np.uint8), cv2.COLOR_GRAY2BGR) # convert back to 3 channels
-
-        key = cv2.waitKey(1)
-        if (key & 0xFF == ord('a')): imgRef =   imgIn.copy()
+        #imgMask = cv2.cvtColor( (result*255).astype(np.uint8), cv2.COLOR_GRAY2BGR) # convert back to 3 channels                
 
         # Layout and Display Output Windows    
         imgLayout = concat_vh( [[imgIn, imgGray],
@@ -118,9 +112,20 @@ def open_camera(imgRef):
     # Repeat the same process after every 10 seconds 
     label_widget.after(10, lambda: open_camera(imgRef)) 
 
+def dupe():
+    global imgIn
+    imgRef=imgIn.copy()
+    open_camera(imgRef)
+    print("screaming")
+
+
 # Create a button to open the camera in GUI app 
-button1 = Button(app, text="Open Camera", command=lambda: open_camera(imgRef))
-button1.pack()
+camopen = Button(app, text="Open Camera", command=lambda: open_camera(imgRef))
+camopen.pack()
+
+capturebg = Button(app, text="Capture Background")
+capturebg.pack()
+
 
 # Create an infinite loop for displaying app on screen 
 app.mainloop() 
