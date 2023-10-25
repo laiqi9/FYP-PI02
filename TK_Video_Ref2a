@@ -52,6 +52,8 @@ class MyVideoCapture:
   def __del__(self):
     if self.vid.isOpened():
       self.vid.release()
+      cv2.destroyAllWindows()
+      print("Stream ended")
       
   def get_frame(self):
      if self.vid.isOpened():
