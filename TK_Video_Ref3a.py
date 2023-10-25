@@ -16,7 +16,7 @@ class App:
     self.canvas = tkinter.Canvas(window, width = self.vid.width*2, height=self.vid.height*2)
     self.canvas.pack()
 
-    self.btn_snapshot=tkinter.Button(window, text="snapshot", width=50, command=self.snapshot)
+    self.btn_snapshot=tkinter.Button(window, text="snapshot", width=50, command=self.vid.snapshot)
     self.btn_snapshot.pack(anchor=tkinter.CENTER, expand=True)
 
     #after called once, update auto called
@@ -24,11 +24,6 @@ class App:
     self.update()
 
     self.window.mainloop()
-
-  def snapshot(self):
-    ret, frame = self.vid.get_frame()
-
-    self.vid.imgIn=frame.copy()
 
   def update(self):
     ret, frame = self.vid.get_frame()
@@ -58,10 +53,16 @@ class MyVideoCapture:
     self.height = self.vid.get(cv2.CAP_PROP_FRAME_HEIGHT)
     print("final res: ", self.width, self.height)
 
-    global imgRef
-    imgRef = np.zeros((int(self.height), int(self.width), 3), dtype = "uint8")
+    self.imgRef = np.zeros((int(self.height), int(self.width), 3), dtype = "uint8")
 
    # Release the video source when the object is destroyed
+
+  def snapshot(self):
+    ret, frame = self.vid.read()
+    self.imgRef=frame.copy()
+    self.imgRef = cv2.cvtColor(self.imgRef, cv2.COLOR_BGR2RGB) 
+    return self.imgRef
+  
   def __del__(self):
     if self.vid.isOpened():
       self.vid.release()
@@ -91,7 +92,7 @@ class MyVideoCapture:
         imgGray = cv2.cvtColor(imgGray, cv2.COLOR_GRAY2BGR) # convert back to 3 channels
         #cv2.imshow('imgGray',imgGray)    
         
-        imgDiff = cv2.absdiff(imgIn,imgRef) # (imgIn.copy() - imgRef.copy()) #np.absolute
+        imgDiff = cv2.absdiff(imgIn, self.imgRef) # (imgIn.copy() - imgRef.copy()) #np.absolute
         #diff = cv2.cvtColor(diff, cv2.COLOR_GRAY2BGR) 
         
         threshold = 50
@@ -109,7 +110,7 @@ class MyVideoCapture:
 
         # Layout and Display Output Windows    
         imgLayout = self.concat_vh( [[imgIn, imgGray],
-        [imgRef, imgIn]])
+                                     [self.imgRef, imgIn]])
 
         return (ret, imgLayout)
        else:
