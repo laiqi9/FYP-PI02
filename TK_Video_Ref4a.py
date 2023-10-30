@@ -41,8 +41,8 @@ class MyVideoCapture:
     if not self.vid.isOpened():
       raise ValueError("Unable to open video source", video_source)
     
-    w=1280.0/8
-    h=720.0/8
+    w=1280.0/4
+    h=720.0/4
     self.vid.set(cv2.CAP_PROP_FRAME_WIDTH, w)
     self.vid.set(cv2.CAP_PROP_FRAME_HEIGHT, h)
     print("res set: ", w, h)
@@ -82,8 +82,9 @@ class MyVideoCapture:
        h, w = frame.shape[:2]
 
        if ret: 
-        
-          imgIn = cv2.resize(frame, (w, h), interpolation=cv2.INTER_AREA)
+          imgIn = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB) 
+
+          imgIn = cv2.resize(imgIn, (w, h), interpolation=cv2.INTER_AREA)
         
           imgOut = 255 - imgIn.copy()        
             
