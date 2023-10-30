@@ -55,7 +55,7 @@ class MyVideoCapture:
 
     self.imgRef = np.zeros((int(self.height), int(self.width), 3), dtype = "uint8")
     self.imgBackground = cv2.imread("Untitled.png")
-    self.imgBackground = cv2.resize(self.imgBackground, (w, h), interpolation=cv2.INTER_AREA)
+    self.imgBackground = cv2.resize(self.imgBackground, (int(self.width), int(self.height)), interpolation=cv2.INTER_AREA)
 
 
   def snapshot(self):
