@@ -101,4 +101,4 @@ class MyVideoCapture:
       return (ret, None)
 
 # Create a window and pass it to the Application object
-App(tkinter.Tk(), "TK_Video_Ref2a")
+App(tkinter.Tk(), "TK_Video_Ref4a")

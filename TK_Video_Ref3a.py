@@ -54,6 +54,7 @@ class MyVideoCapture:
     print("final res: ", self.width, self.height)
 
     self.imgRef = np.zeros((int(self.height), int(self.width), 3), dtype = "uint8")
+    
 
    # Release the video source when the object is destroyed
 

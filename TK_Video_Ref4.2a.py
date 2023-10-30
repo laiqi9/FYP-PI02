@@ -17,7 +17,10 @@ class App:
     self.canvas.pack()
 
     self.btn_snapshot=tkinter.Button(window, text="snapshot", width=50, command=self.vid.snapshot)
-    self.btn_snapshot.pack(anchor=tkinter.CENTER, expand=True)
+    self.btn_snapshot.pack(anchor=tkinter.NE, expand=True)
+
+    self.btn_snapshot=tkinter.Button(window, text="mask", width=50, command=self.vid.mask)
+    self.btn_snapshot.pack(anchor=tkinter.NW, expand=True)
 
     #after called once, update auto called
     self.delay = 15
@@ -41,6 +44,9 @@ class MyVideoCapture:
     if not self.vid.isOpened():
       raise ValueError("Unable to open video source", video_source)
     
+    self.mousePt = (0,0)
+    self.mouseDown = False
+    
     w=1280.0/4
     h=720.0/4
     self.vid.set(cv2.CAP_PROP_FRAME_WIDTH, w)
@@ -54,6 +60,9 @@ class MyVideoCapture:
     print("final res: ", self.width, self.height)
 
     self.imgRef = np.zeros((int(self.height), int(self.width), 3), dtype = "uint8")
+    self.imgComposite = np.zeros((int(self.height), int(self.width), 3), dtype = "uint8")   # blank images
+    self.imgTemp1 = np.zeros((int(self.height), int(self.width), 3), dtype = "uint8")
+
     self.imgBackground = cv2.imread("Untitled.png")
     self.imgBackground = cv2.resize(self.imgBackground, (int(self.width), int(self.height)), interpolation=cv2.INTER_AREA)
 
@@ -77,95 +86,74 @@ class MyVideoCapture:
   def concat_vh(self, list_2d):
     # return final image
     return cv2.vconcat([cv2.hconcat(list_h) for list_h in list_2d])
-  
-  # initialize the list of reference points and boolean indicating
-  mousePt = (0,0)
-  mouseDown = False
 
-  def onMouseButton(event, x, y, flags, param):
-    # grab references to the global variables
-    global mousePt, mouseDown
-
+  def onMouseButton(self, event, x, y, flags, param):
     # if the left mouse button was clicked, record the (x, y) coordinates 
     # and indicate mouse button is pressed
     if event == cv2.EVENT_LBUTTONDOWN:
-        mousePt = (x, y)
-        mouseDown = True
+        self.mousePt = (x, y)
+        self.mouseDown = True
         print("Mouse Down ...")
     # check to see if the left mouse button was released
     elif event == cv2.EVENT_LBUTTONUP:
     # if the left mouse button was released, record the (x, y) coordinates 
     # and indicate mouse button is unclicked
-        mousePt = (x, y)
-        mouseDown = False
+        self.mousePt = (x, y)
+        self.mouseDown = False
         print("Mouse Up ...")
     elif event == cv2.EVENT_MOUSEMOVE:
-        mousePt = (x, y)
+        self.mousePt = (x, y)
         print(x,y)
-
+  
+  def mask(self):
+    self.imgMask.fill(0)
+    return self.imgMask
 
   def get_frame(self):
      if self.vid.isOpened():
        ret, frame = self.vid.read()
-       bLoop = True
-       while (bLoop):
-          
-           # Process Keyboard, Mouse Any Other Inputs
-           key = cv2.waitKey(1)
-           if (key == 27): bLoop = False ; break
-           if (key & 0xFF == ord('a')): imgRef = imgIn.copy()
-           if (key & 0xFF == ord('c')): self.imgMask.fill(0)
-          
-          
-           # Capture Input Frame
-           ret, frame = self.vid.read()
-           if ret: # ie. camera frame is available, do processing here 
-          
-               self.imgIn = cv2.resize(self.imgBackground, (int(self.width), int(self.height)), interpolation=cv2.INTER_AREA)
-               cv2.imshow('imgIn',imgIn)            
-              
-               imgOut = imgIn.copy()
-              
-               # color = (255, 0, 0) // blue
-               if (mouseDown):
-                   # print("Mouse Down - drawing")
-                   #cv2.circle(imgOut, mousePt, 5, (0,0, 255), -1)
-                   # Calculate top left corner and bottom right conner of rectangle centered at mousePt
-                   pt1 = tuple(map(lambda x, y: x - y, mousePt, (10,10))) # ie. pt1 = mousePt - (10,10)
-                   pt2 = tuple(map(lambda x, y: x + y, mousePt, (10,10))) # ie. pt2 = mousePt + (10,10)
-                   cv2.rectangle(self.imgMask, pt1, pt2,(255,255,255) , -1)
-                  
-               imgTemp1 = self.imgMask.copy()  
-               imgTemp1[:,:,0] = 0  # create a copy of mask in yellow by setting blue = 0  
-               cv2.addWeighted( imgIn, 0.5, imgTemp1, 0.5, 0.0, imgTemp1 )
-               cv2.imshow('imgTemp1',imgTemp1) 
-              
-               imgOut = cv2.bitwise_and( imgIn, cv2.bitwise_not(self.imgMask) )  +  cv2.bitwise_and(imgTemp1, self.imgMask) 
-               cv2.imshow('imgOut',imgOut) 
-              
-               cv2.imshow('imgOut',imgOut)   
-               cv2.imshow('imgMask',self.imgMask)   
-
 
        h, w = frame.shape[:2]
+
        if ret: 
-          imgIn = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB) 
+        imgIn = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB) 
 
-          imgIn = cv2.resize(imgIn, (w, h), interpolation=cv2.INTER_AREA)
+        imgIn = cv2.resize(imgIn, (w, h), interpolation=cv2.INTER_AREA)   
         
-          imgOut = 255 - imgIn.copy()        
-            
-          # Layout and Display Results in One Window
-          imgResults= self.concat_vh( [[imgIn, imgIn],
-                                       [self.imgRef, self.imgBackground], 
-                                       [imgIn, imgOut]]) 
-          
+        imgOut = imgIn.copy()
+        
+        # color = (255, 0, 0) // blue
+        if (self.mouseDown):
+            # print("Mouse Down - drawing")
+            #cv2.circle(imgOut, mousePt, 5, (0,0,255), -1)
+            # Calculate top left corner and bottom right conner of rectangle centered at mousePt
+            pt1 = tuple(map(lambda x, y: x - y, self.mousePt, (10,10))) # ie. pt1 = mousePt - (10,10)
+            pt2 = tuple(map(lambda x, y: x + y, self.mousePt, (10,10))) # ie. pt2 = mousePt + (10,10)
+            cv2.rectangle(self.imgMask, pt1, pt2,(255,255,255) , -1)
+        
+        self.imgTemp1 = self.imgMask.copy()   
+        self.imgTemp1[:,:,0] = 0  # create a copy of mask in yellow by setting blue = 0  
+        cv2.addWeighted( imgIn, 0.5, self.imgTemp1, 0.5, 0.0, self.imgTemp1 )
+        cv2.imshow('imgTemp1',self.imgTemp1) 
+        
+        imgOut = cv2.bitwise_and( imgIn, cv2.bitwise_not(self.imgMask) )  +  cv2.bitwise_and(self.imgTemp1, self.imgMask) 
+        cv2.imshow('imgOut',imgOut) 
+        
+        cv2.imshow('imgOut',imgOut)   
+        cv2.imshow('imgMask',self.imgMask)   
 
-          return (ret, imgResults)
+
+        # Layout and Display Results in One Window
+        imgResults= self.concat_vh( [[imgIn, imgIn],
+                                [self.imgRef, self.imgBackground], 
+                                [imgIn, imgOut]]) 
+        cv2.imshow("Results", imgResults)
+
+        return (ret, imgResults)
        else:
          return (ret, None)
      else:
       return (ret, None)
 
 # Create a window and pass it to the Application object
-App(tkinter.Tk(), "TK_Video_Ref2a")
+App(tkinter.Tk(), "TK_Video_Ref4.2a")
