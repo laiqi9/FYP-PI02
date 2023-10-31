@@ -22,6 +22,10 @@ class App:
     self.btn_snapshot=tkinter.Button(window, text="mask", width=50, command=self.vid.mask)
     self.btn_snapshot.pack(anchor=tkinter.NW, expand=True)
 
+    # initialize the list of reference points and boolean indicating
+    self.mousePt = (0,0)
+    self.mouseDown = False
+
     #after called once, update auto called
     self.delay = 15
     self.update()
