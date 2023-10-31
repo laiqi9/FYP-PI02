@@ -27,9 +27,6 @@ class App:
     self.window.mainloop()
 
   def paint(self, event):
-   python_green = "#476042"
-   x1, y1 = ( event.x - 1 ), ( event.y - 1 )
-   x2, y2 = ( event.x + 1 ), ( event.y + 1 )
    mousePt=(event.x, event.y)
    pt1 = tuple(map(lambda x, y: x - y, mousePt, (10,10))) # ie. pt1 = mousePt - (10,10)
    pt2 = tuple(map(lambda x, y: x + y, mousePt, (10,10))) # ie. pt2 = mousePt + (10,10)
