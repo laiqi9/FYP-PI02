@@ -13,7 +13,7 @@ class App:
     self.vid = MyVideoCapture(video_source)
     
     #create a canvas that can fit the video source size
-    self.canvas = tkinter.Canvas(window, width = self.vid.width*2, height=self.vid.height*2)
+    self.canvas = tkinter.Canvas(window, width = self.vid.width*2, height=self.vid.height*3)
     self.canvas.pack()
 
     self.btn_snapshot=tkinter.Button(window, text="snapshot", width=50, command=self.vid.snapshot)
@@ -47,8 +47,8 @@ class MyVideoCapture:
     self.mousePt = (0,0)
     self.mouseDown = False
     
-    w=1280.0/4
-    h=720.0/4
+    w=1280.0/7
+    h=720.0/7
     self.vid.set(cv2.CAP_PROP_FRAME_WIDTH, w)
     self.vid.set(cv2.CAP_PROP_FRAME_HEIGHT, h)
     print("res set: ", w, h)
@@ -75,6 +75,7 @@ class MyVideoCapture:
     ret, frame = self.vid.read()
     self.imgRef=frame.copy()
     self.imgRef = cv2.cvtColor(self.imgRef, cv2.COLOR_BGR2RGB) 
+    self.imgRef = cv2.resize(self.imgRef, (int(self.width), int(self.height)), interpolation=cv2.INTER_AREA)
     return self.imgRef
   
   def __del__(self):
@@ -121,12 +122,12 @@ class MyVideoCapture:
 
         imgIn = cv2.resize(imgIn, (w, h), interpolation=cv2.INTER_AREA)   
         
-        imgOut = imgIn.copy()
+        self.imgOut = imgIn.copy()
         
         # color = (255, 0, 0) // blue
         if (self.mouseDown):
             # print("Mouse Down - drawing")
-            #cv2.circle(imgOut, mousePt, 5, (0,0,255), -1)
+            #cv2.circle(self.imgOut, mousePt, 5, (0,0,255), -1)
             # Calculate top left corner and bottom right conner of rectangle centered at mousePt
             pt1 = tuple(map(lambda x, y: x - y, self.mousePt, (10,10))) # ie. pt1 = mousePt - (10,10)
             pt2 = tuple(map(lambda x, y: x + y, self.mousePt, (10,10))) # ie. pt2 = mousePt + (10,10)
@@ -137,18 +138,17 @@ class MyVideoCapture:
         cv2.addWeighted( imgIn, 0.5, self.imgTemp1, 0.5, 0.0, self.imgTemp1 )
         cv2.imshow('imgTemp1',self.imgTemp1) 
         
-        imgOut = cv2.bitwise_and( imgIn, cv2.bitwise_not(self.imgMask) )  +  cv2.bitwise_and(self.imgTemp1, self.imgMask) 
-        cv2.imshow('imgOut',imgOut) 
+        self.imgOut = cv2.bitwise_and( imgIn, cv2.bitwise_not(self.imgMask) )  +  cv2.bitwise_and(self.imgTemp1, self.imgMask) 
+        cv2.imshow('imgOut',self.imgOut) 
         
-        cv2.imshow('imgOut',imgOut)   
+        cv2.imshow('imgOut',self.imgOut)   
         cv2.imshow('imgMask',self.imgMask)   
 
 
         # Layout and Display Results in One Window
         imgResults= self.concat_vh( [[imgIn, imgIn],
                                 [self.imgRef, self.imgBackground], 
-                                [imgIn, imgOut]]) 
-        cv2.imshow("Results", imgResults)
+                                [imgIn, self.imgOut]]) 
 
         return (ret, imgResults)
        else:
