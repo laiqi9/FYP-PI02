@@ -1,7 +1,7 @@
 from tkinter import *
 
-canvas_width = 500
-canvas_height = 150
+canvas_width = 300
+canvas_height = 300
 
 def paint( event ):
    python_green = "#476042"
