@@ -15,18 +15,27 @@ class App:
     #create a canvas that can fit the video source size
     self.canvas = tkinter.Canvas(window, width = self.vid.width*2, height=self.vid.height*2)
     self.canvas.pack()
+    self.canvas.bind( "<B1-Motion>", self.paint )
 
     self.btn_snapshot=tkinter.Button(window, text="snapshot", width=50, command=self.vid.snapshot)
     self.btn_snapshot.pack(anchor=tkinter.NE, expand=True)
-
-    self.btn_snapshot=tkinter.Button(window, text="mask", width=50, command=self.vid.mask)
-    self.btn_snapshot.pack(anchor=tkinter.NW, expand=True)
 
     #after called once, update auto called
     self.delay = 15
     self.update()
 
     self.window.mainloop()
+
+  def paint(self, event):
+   python_green = "#476042"
+   x1, y1 = ( event.x - 1 ), ( event.y - 1 )
+   x2, y2 = ( event.x + 1 ), ( event.y + 1 )
+   mousePt=(event.x, event.y)
+   pt1 = tuple(map(lambda x, y: x - y, mousePt, (10,10))) # ie. pt1 = mousePt - (10,10)
+   pt2 = tuple(map(lambda x, y: x + y, mousePt, (10,10))) # ie. pt2 = mousePt + (10,10)
+   self.vid.imgMask=cv2.rectangle(self.vid.imgMask, pt1, pt2, (255, 255, 255), -1)
+
+   print("ow")
 
   def update(self):
     ret, frame = self.vid.get_frame()
@@ -65,9 +74,6 @@ class MyVideoCapture:
 
     self.imgBackground = np.zeros((int(self.height), int(self.width), 3), dtype = "uint8")
 
-    '''self.imgBackground = cv2.imread("Untitled.png")
-    self.imgBackground = cv2.resize(self.imgBackground, (int(self.width), int(self.height)), interpolation=cv2.INTER_AREA)'''
-
     #Copy a image of snapshot for reference
     self.imgMask = self.imgRef.copy()
 
@@ -88,28 +94,6 @@ class MyVideoCapture:
     # return final image
     return cv2.vconcat([cv2.hconcat(list_h) for list_h in list_2d])
 
-  def onMouseButton(self, event, x, y, flags, param):
-    # if the left mouse button was clicked, record the (x, y) coordinates 
-    # and indicate mouse button is pressed
-    if event == cv2.EVENT_LBUTTONDOWN:
-        self.mousePt = (x, y)
-        self.mouseDown = True
-        print("Mouse Down ...")
-    # check to see if the left mouse button was released
-    elif event == cv2.EVENT_LBUTTONUP:
-    # if the left mouse button was released, record the (x, y) coordinates 
-    # and indicate mouse button is unclicked
-        self.mousePt = (x, y)
-        self.mouseDown = False
-        print("Mouse Up ...")
-    elif event == cv2.EVENT_MOUSEMOVE:
-        self.mousePt = (x, y)
-        print(x,y)
-  
-  def mask(self):
-    self.imgMask.fill(0)
-    return self.imgMask
-
   def get_frame(self):
      if self.vid.isOpened():
        ret, frame = self.vid.read()
@@ -122,15 +106,6 @@ class MyVideoCapture:
         imgIn = cv2.resize(imgIn, (w, h), interpolation=cv2.INTER_AREA)   
         
         imgOut = imgIn.copy()
-        
-        # color = (255, 0, 0) // blue
-        if (self.mouseDown):
-            # print("Mouse Down - drawing")
-            #cv2.circle(imgOut, mousePt, 5, (0,0,255), -1)
-            # Calculate top left corner and bottom right conner of rectangle centered at mousePt
-            pt1 = tuple(map(lambda x, y: x - y, self.mousePt, (10,10))) # ie. pt1 = mousePt - (10,10)
-            pt2 = tuple(map(lambda x, y: x + y, self.mousePt, (10,10))) # ie. pt2 = mousePt + (10,10)
-            cv2.rectangle(self.imgMask, pt1, pt2,(255,255,255) , -1)
         
         self.imgTemp1 = self.imgMask.copy()   
         self.imgTemp1[:,:,0] = 0  # create a copy of mask in yellow by setting blue = 0  
@@ -152,7 +127,7 @@ class MyVideoCapture:
 
         return (ret, imgResults)
        else:
-         return (ret, None)
+        return (ret, None)
      else:
       return (ret, None)
 
