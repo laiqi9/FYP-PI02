@@ -80,7 +80,7 @@ while (bLoop):
         imgIn = cv2.resize(frame, (w, h), interpolation=cv2.INTER_AREA)
         cv2.imshow('imgIn',imgIn)            
         
-        K = 0.5
+        K = 0.2
         cv2.addWeighted( imgIn, K, imgPrev, (1-K), 0.0, imgAve);    
         cv2.imshow('imgAve',imgAve)       
         

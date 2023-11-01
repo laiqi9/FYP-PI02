@@ -52,7 +52,7 @@ imgComposite = np.zeros((h, w, 3), dtype = "uint8")   # blank images
 #imgTemp1 = np.zeros((h, w, 3), dtype = "uint8") # blank images
 #imgTemp2 = np.zeros((h, w, 3), dtype = "uint8") # blank images
 
-imgBackground = cv2.imread('./images/paris.bmp')
+imgBackground = cv2.imread('paris.bmp')
 imgBackground = cv2.resize(imgBackground, (w, h), interpolation=cv2.INTER_AREA)
 cv2.imshow('imgBackground',imgBackground) 
 

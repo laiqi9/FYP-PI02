@@ -23,6 +23,9 @@ class App:
     self.btn_snapshot=tkinter.Button(window, text="Clear Mask", width=30, command=self.clearmask)
     self.btn_snapshot.pack(side=tkinter.LEFT, anchor=tkinter.NW, expand=True)
 
+    self.btn_snapshot=tkinter.Button(window, text="Increase Threshold", width=30, command=self.increaseThres)
+    self.btn_snapshot.pack(side=tkinter.LEFT, anchor=tkinter.NW, expand=True)
+
     #after called once, update auto called
     self.delay = 15
     self.update()
