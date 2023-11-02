@@ -6,7 +6,8 @@ from PIL import Image, ImageTk
 from pathlib import Path
 path_root=Path(__file__).parents[2]
 sys.path.append(str(path_root))
-import C:\school - Cdrive\fyp\FYP-PI02/ 
+from TK_VideoCapture import MyVideoCapture
+
 
 class App:
   def __init__(self, window, window_title, ):
