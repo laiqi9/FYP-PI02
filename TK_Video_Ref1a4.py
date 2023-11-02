@@ -15,6 +15,8 @@ class App:
     #create a canvas that can fit the video source size
     self.canvas = tkinter.Canvas(window, width = self.vid.width, height=self.vid.height)
     self.canvas.pack()
+    self.canvas1 = tkinter.Canvas(window, width = self.vid1.width, height=self.vid1.height)
+    self.canvas1.pack()
 
     self.btn_snapshot=tkinter.Button(window, text="snapshot", width=20, command=self.snapshot)
     self.btn_snapshot.pack(anchor=tkinter.CENTER, expand=True)
@@ -30,10 +32,14 @@ class App:
 
   def update(self):
     ret, frame = self.vid.get_frame()
+    ret1, frame1 = self.vid1.get_frame()
 
-    if ret:
+    if ret and ret1:
       self.photo = ImageTk.PhotoImage(image=Image.fromarray(frame))
       self.canvas.create_image(0, 0, image=self.photo, ancho=tkinter.NW)
+      
+      self.photo1 = ImageTk.PhotoImage(image=Image.fromarray(frame1))
+      self.canvas1.create_image(0, 0, image=self.photo1, ancho=tkinter.NW)
     
     self.window.after(self.delay, self.update)
 
