@@ -52,7 +52,8 @@ class MyVideoCapture:
 
     # Get video source width and height
     self.width = self.vid.get(cv2.CAP_PROP_FRAME_WIDTH)
-    self.height = self.vid.get(cv2.CAP_PROP_FRAME_HEIGHT)
+    self.height = self.vid.get(cv2.
+    CAP_PROP_FRAME_HEIGHT)
 
    # Release the video source when the object is destroyed
   def __del__(self):
