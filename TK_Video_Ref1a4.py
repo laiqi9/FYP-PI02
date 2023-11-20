@@ -2,6 +2,8 @@ import tkinter
 import cv2
 import time
 from PIL import Image, ImageTk
+
+#diy multiple 
  
 class App:
   def __init__(self, window, window_title, ):
@@ -13,9 +15,9 @@ class App:
     self.vid1 = MyVideoCapture(1)
     
     #create a canvas that can fit the video source size
-    self.canvas = tkinter.Canvas(window, width = self.vid.width, height=self.vid.height)
+    self.canvas = tkinter.Canvas(window, width = self.vid1.get_width()/2, height=self.vid1.get_height()/2)
     self.canvas.pack()
-    self.canvas1 = tkinter.Canvas(window, width = self.vid1.width, height=self.vid1.height)
+    self.canvas1 = tkinter.Canvas(window, width = self.vid1.get_width()/2, height=self.vid1.get_height()/2)
     self.canvas1.pack()
 
     self.btn_snapshot=tkinter.Button(window, text="snapshot", width=20, command=self.snapshot)
@@ -67,11 +69,21 @@ class MyVideoCapture:
        ret, frame = self.vid.read()
        if ret:
          # Return a boolean success flag and the current frame converted to BGR
-         return (ret, cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
+         imgIn=cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+
+         imgIn=cv2.resize(imgIn, (int(self.width/2), int(self.height/2)))
+
+         return (ret, imgIn)
        else:
          return (ret, None)
      else:
       return (ret, None)
+     
+  def get_height(self):
+    return self.height
+  
+  def get_width(self):
+    return self.width
 
 # Create a window and pass it to the Application object
 App(tkinter.Tk(), "TK_Video_Ref1a")
