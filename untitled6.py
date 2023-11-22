@@ -11,14 +11,15 @@ class App:
   def __init__(self, window, window_title, video_source=0):
     self.window = window
     self.window.title(window_title)
+    self.window.geometry("1280x720")
     
-    vids=[]
+    self.vids=[]
 
     #open video source, declare as self.vid
-    vids[0]=MyVideoCapture(video_source, 0)
-    vids[1]=MyVideoCapture(video_source, 1)
-    vids[2]=MyVideoCapture(video_source, 2)
-    vids[3]=MyVideoCapture(video_source, 3)
+    self.vids[0]=MyVideoCapture(video_source, 0)
+    self.vids[1]=MyVideoCapture(video_source, 1)
+    self.vids[2]=MyVideoCapture(video_source, 2)
+    self.vids[3]=MyVideoCapture(video_source, 3)
 
     
     #create a canvas that can fit the video source size
@@ -63,7 +64,7 @@ class App:
     self.vid.threshold=int(val)
     print(self.vid.threshold)
 
-  #draw recatngles on vid.imgMask for overlay drawing
+  #draw rectangles on vid.imgMask for overlay drawing
   #here because connected to button
   def paint(self, event):
    mousePt=(event.x, event.y)
@@ -71,7 +72,7 @@ class App:
    pt2 = tuple(map(lambda x, y: x + y, mousePt, (10,10))) # ie. pt2 = mousePt + (10,10)
    self.vid.imgMask=cv2.rectangle(self.vid.imgMask, pt1, pt2, (255, 255, 255), -1)
  
-  #rest the drawing to black
+  #reset the drawing to black
   def clearmask(self):
     self.vid.imgMask.fill(0)
 
@@ -80,13 +81,87 @@ class App:
     ret, frame = self.vid.get_frame()
 
     if ret:
-      self.photo = ImageTk.PhotoImage(image=Image.fromarray(frame))
-      self.canvas.create_image(0, 0, image=self.photo, ancho=tkinter.NW)
+        for vid in self.vids:
+            self.photo = ImageTk.PhotoImage(image=Image.fromarray(frame))
+            self.canvas.create_image(0, 0, image=self.photo, ancho=tkinter.NW)
     
     self.window.after(self.delay, self.update)
 
 #video capture and processing
 class MyVideoCapture:
+  #runs once upon startup
+  def __init__(self, video_source=0, quad_num):
+    # Open the video source
+    self.vid = cv2.VideoCapture(video_source)
+    if not self.vid.isOpened():
+      raise ValueError("Unable to open video source ", quad_num)    
+
+    w=1280.0/2
+    h=720.0/2
+    self.vid.set(cv2.CAP_PROP_FRAME_WIDTH, w)
+    self.vid.set(cv2.CAP_PROP_FRAME_HEIGHT, h)
+    print("res set: ", w, h)
+
+
+    # Get video source width and height
+    self.width = self.vid.get(cv2.CAP_PROP_FRAME_WIDTH)
+    self.height = self.vid.get(cv2.CAP_PROP_FRAME_HEIGHT)
+    print("final res: ", self.width, self.height)
+
+    # Other Variable
+    self.threshold = 20
+  
+  #take a snapshot and set to imgRef
+  def snapshot(self):
+    ret, frame = self.vid.read()
+    self.imgRef=frame.copy()), dtype = "uint8")   # blank images
+
+    #Copy a image of snapshot for reference
+    self.imgMask = self.imgRef.copy()
+
+    self.imgRef = cv2.resize(self.imgRef, (int(self.width), int(self.height)), interpolation=cv2.INTER_AREA)
+    return self.imgRef
+  
+  #run upon destruction of object
+  def __del__(self):
+    # Release the video source when the object is destroyed
+    if self.vid.isOpened():
+      self.vid.release()
+      cv2.destroyAllWindows()
+      print("Stream ended")
+
+  # Main loop
+  def get_frame(self):
+     if self.vid.isOpened():
+
+       ret, frame = self.vid.read()
+
+       h, w = frame.shape[:2]
+
+       if ret: #image processing here
+       
+           if quad_num == 1:
+               x_coord = 0
+               y_coord = 0
+               imgOut = fw.Quadrant(quad_num, x_coord, y_coord, fw.imgTemp, fw.imgMask)
+           elif quad_num == 2:
+               x_coord = 1280.0/2
+               y_coord = 0
+               imgOut = fw.Quadrant(quad_num, x_coord, y_coord, fw.imgTemp2, fw.imgMask2)
+           elif quad_num == 3:
+               x_coord = 0
+               y_coord = 720.0/2
+               imgOut = fw.Quadrant(quad_num, x_coord, y_coord, fw.imgTemp3, fw.imgMask3)
+           else:
+               x_coord=1280.0/2
+               y_coord=720.0/2
+               imgOut = fw.Quadrant(quad_num, x_coord, y_coord, fw.imgTemp4, fw.imgMask4)
+               
+           return imgOut.Extract_Quadrant()
+       else:
+        return (ret, None)
+     else:
+      return (ret, None)
   #runs once upon startup
   def __init__(self, video_source=0, quad_num):
     # Open the video source
@@ -191,4 +266,4 @@ class MyVideoCapture:
       return (ret, None)
 
 # Create a window and pass it to the Application object
-App(tkinter.Tk(), "TK_Video_Ref5a")
+App(tkinter.Tk(), "FYP")
