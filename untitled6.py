@@ -1,37 +1,50 @@
-import cv2, time
+import cv2
+import time
 from PIL import Image, ImageTk
 import numpy as np
 import requests
-import tkinter as tk
+import tkinter
 
-import Final_Work6v3 as fw
+import Final_Work6v3copy as fw
+
+
+'''
+quadrant map
++----+----+
+|  1 |  2 | 
++----+----+
+|  3 |  4 | 
++----+----+
+
+'''
+
 
 class App:
-  #__init__ runs once upon startup
-  def __init__(self, window, window_title, video_source=0):
-    self.window = window
-    self.window.title(window_title)
-    self.window.geometry("1280x720")
-    
-    self.vids=[]
+    # __init__ runs once upon startup
+    def __init__(self, window, window_title, video_source=1):
+        self.window = window
+        self.window.title(window_title)
+        self.window.geometry("1280x720")
 
-    #open video source, declare as self.vid
-    self.vids[0]=MyVideoCapture(video_source, 0)
-    self.vids[1]=MyVideoCapture(video_source, 1)
-    self.vids[2]=MyVideoCapture(video_source, 2)
-    self.vids[3]=MyVideoCapture(video_source, 3)
+        self.vids = []
 
-    
-    #create a canvas that can fit the video source size
-    self.canvas = tkinter.Canvas(window, width = self.vid.width*2, height=self.vid.height*2)
-    self.canvas.pack()
-    
-    
-    win.bind('<Motion>', self.mouseMove())
+        # open video source, declare as self.vid
+        self.vids.append(MyVideoCapture(video_source, 0))
+        self.vids.append(MyVideoCapture(video_source, 1))
+        self.vids.append(MyVideoCapture(video_source, 2))
+        self.vids.append(MyVideoCapture(video_source, 3))
 
-    #create interactive buttons for user
-    #  side = tkinter.TOP BOTTOM LEFT RIGHT
-    #  anchor = tkinter. N E S W NE NW...
+        # create a canvas that can fit the video source size
+        self.canvas = tkinter.Canvas(window, width=1280, height=720)
+        self.canvas.pack()
+
+        self.canvas.bind('<Motion>', self.mouseMove)
+        self.canvas.bind('<Button-1>', self.mouseClick)
+
+        # create interactive buttons for user
+        #  side = tkinter.TOP BOTTOM LEFT RIGHT
+        #  anchor = tkinter. N E S W NE NW...
+        '''
     self.btn_snapshot=tkinter.Button(window, text="snapshot", width=20, command=self.vid.snapshot)
     self.btn_snapshot.pack(side=tkinter.RIGHT, anchor=tkinter.NE)
 
@@ -43,21 +56,70 @@ class App:
     #  from_= lowest, to= highest
     scale = tkinter.Scale(window, variable=self.vid.threshold, orient=tkinter.HORIZONTAL, from_=1, to=50, command=self.sel)
     scale.pack(side=tkinter.TOP, anchor=tkinter.N)
+    '''
 
-    #after called once, update auto called
-    self.delay = 100
-    self.update()
+        # after called once, update auto called
+        self.delay = 100
+        self.update()
 
-    #keep the window open
-    self.window.mainloop()
-    
-  def mouseMove(self):
-      x= e.x
-      y= e.y
-      print("Mouse: ", x, y)
-      
-      # if x<
-    
+        # keep the window open
+        self.window.mainloop()
+
+    def mouseMove(self, e):
+        x = e.x
+        y = e.y
+        print("Mouse: ", x, y)
+
+        # if x<
+
+    # make onMouseButton obselete in fw
+    def mouseClick(self, e):
+        x = e.x
+        y = e.y
+        print("Clicked at: ", x, y)
+
+        if (x < (1280/2) and y < (720/2)):
+            # quad 1
+            print("quad 1")
+        elif(x > (1280/2) and y < (720/2)):
+            # quad 2
+            print("quad 2")
+        elif(x < (1280/2) and y > (720/2)):
+            # quad 3
+            print("quad 3")
+        else:
+            # quad 4
+            print("quad 4")
+
+    # keep running and displaying video
+    def update(self):
+        quad_display=0
+        x_coord = 0
+        y_coord = 0
+        for vid in self.vids:
+            ret, frame = vid.get_frame()
+            
+            if quad_display == 1:  # quad 1
+                x_coord = 0
+                y_coord = 0
+            elif quad_display == 2:  # quad 2
+                x_coord = 1280.0/2
+                y_coord = 0
+            elif quad_display == 3:  # quad 3
+                x_coord = 0
+                y_coord = 720.0/2
+            else:  # quad 4
+                x_coord = 1280.0/2
+                y_coord = 720.0/2
+
+            self.photo = ImageTk.PhotoImage(image=Image.fromarray(frame))
+            self.canvas.create_image(
+                x_coord, y_coord, image=self.photo, ancho=tkinter.NW)
+            quad_display += 1
+        self.window.after(self.delay, self.update)
+
+
+'''
   #set vid threshold from scale
   #here because connected to button
   def sel(self, val):
@@ -75,195 +137,90 @@ class App:
   #reset the drawing to black
   def clearmask(self):
     self.vid.imgMask.fill(0)
+'''
 
-  #keep running and displaying video
-  def update(self):
-    ret, frame = self.vid.get_frame()
+# video capture and processing
 
-    if ret:
-        for vid in self.vids:
-            self.photo = ImageTk.PhotoImage(image=Image.fromarray(frame))
-            self.canvas.create_image(0, 0, image=self.photo, ancho=tkinter.NW)
-    
-    self.window.after(self.delay, self.update)
 
-#video capture and processing
 class MyVideoCapture:
-  #runs once upon startup
-  def __init__(self, video_source=0, quad_num):
-    # Open the video source
-    self.vid = cv2.VideoCapture(video_source)
-    if not self.vid.isOpened():
-      raise ValueError("Unable to open video source ", quad_num)    
+    # runs once upon startup
+    def __init__(self, video_source, quad_num):
+        # Open the video source
+        self.vid = cv2.VideoCapture(video_source)
+        if not self.vid.isOpened():
+            raise ValueError("Unable to open video source ", quad_num)
 
-    w=1280.0/2
-    h=720.0/2
-    self.vid.set(cv2.CAP_PROP_FRAME_WIDTH, w)
-    self.vid.set(cv2.CAP_PROP_FRAME_HEIGHT, h)
-    print("res set: ", w, h)
+        w = 1280.0/2
+        h = 720.0/2
+        self.vid.set(cv2.CAP_PROP_FRAME_WIDTH, w)
+        self.vid.set(cv2.CAP_PROP_FRAME_HEIGHT, h)
+        print("res set: ", w, h)
 
+        self.quad_num = quad_num
 
-    # Get video source width and height
-    self.width = self.vid.get(cv2.CAP_PROP_FRAME_WIDTH)
-    self.height = self.vid.get(cv2.CAP_PROP_FRAME_HEIGHT)
-    print("final res: ", self.width, self.height)
+        # Get video source width and height
+        self.width = self.vid.get(cv2.CAP_PROP_FRAME_WIDTH)
+        self.height = self.vid.get(cv2.CAP_PROP_FRAME_HEIGHT)
+        print("final res: ", self.width, self.height)
 
-    # Other Variable
-    self.threshold = 20
-  
-  #take a snapshot and set to imgRef
+        # Other Variable
+        self.threshold = 20
+        
+        self.imgOut = np.zeros((int(self.height), int(self.width), 3), dtype = "uint8")
+
+    # take a snapshot and set to imgRef
+    '''
   def snapshot(self):
     ret, frame = self.vid.read()
-    self.imgRef=frame.copy()), dtype = "uint8")   # blank images
+    self.imgRef = np.zeros((int(self.height), int(self.width), 3), dtype = "uint8")
 
     #Copy a image of snapshot for reference
     self.imgMask = self.imgRef.copy()
 
     self.imgRef = cv2.resize(self.imgRef, (int(self.width), int(self.height)), interpolation=cv2.INTER_AREA)
     return self.imgRef
-  
-  #run upon destruction of object
-  def __del__(self):
-    # Release the video source when the object is destroyed
-    if self.vid.isOpened():
-      self.vid.release()
-      cv2.destroyAllWindows()
-      print("Stream ended")
+'''
 
-  # Main loop
-  def get_frame(self):
-     if self.vid.isOpened():
+    # run upon destruction of object
+    def __del__(self):
+        # Release the video source when the object is destroyed
+        if self.vid.isOpened():
+            self.vid.release()
+            cv2.destroyAllWindows()
+            print("Stream ended")
 
-       ret, frame = self.vid.read()
+    # Main loop
+    def get_frame(self):
+        if self.vid.isOpened():
 
-       h, w = frame.shape[:2]
+            ret, frame = self.vid.read()
 
-       if ret: #image processing here
-       
-           if quad_num == 1:
-               x_coord = 0
-               y_coord = 0
-               imgOut = fw.Quadrant(quad_num, x_coord, y_coord, fw.imgTemp, fw.imgMask)
-           elif quad_num == 2:
-               x_coord = 1280.0/2
-               y_coord = 0
-               imgOut = fw.Quadrant(quad_num, x_coord, y_coord, fw.imgTemp2, fw.imgMask2)
-           elif quad_num == 3:
-               x_coord = 0
-               y_coord = 720.0/2
-               imgOut = fw.Quadrant(quad_num, x_coord, y_coord, fw.imgTemp3, fw.imgMask3)
-           else:
-               x_coord=1280.0/2
-               y_coord=720.0/2
-               imgOut = fw.Quadrant(quad_num, x_coord, y_coord, fw.imgTemp4, fw.imgMask4)
-               
-           return imgOut.Extract_Quadrant()
-       else:
-        return (ret, None)
-     else:
-      return (ret, None)
-  #runs once upon startup
-  def __init__(self, video_source=0, quad_num):
-    # Open the video source
-    self.vid = cv2.VideoCapture(video_source)
-    if not self.vid.isOpened():
-      raise ValueError("Unable to open video source", video_source)   
-      
-    self.vid=fw.Quadrant(quad_num, x_coord, y_coord, black_rect, green_rect)
-    self.vid=self.vid.Extract_Quadrant()
-  
-  #take a snapshot and set to imgRef
-  def snapshot(self):
-    ret, frame = self.vid.read()
-    self.imgRef=frame.copy()
-    self.imgRef = cv2.cvtColor(self.imgRef, cv2.COLOR_BGR2RGB) 
-    self.imgRef = cv2.resize(self.imgRef, (int(self.width), int(self.height)), interpolation=cv2.INTER_AREA)
-    return self.imgRef
-  
-  #run upon destruction of object
-  def __del__(self):
-    # Release the video source when the object is destroyed
-    if self.vid.isOpened():
-      self.vid.release()
-      cv2.destroyAllWindows()
-      print("Stream ended")
-  
-  #put video squares together
-  def concat_vh(self, list_2d):
-    # return final image
-    return cv2.vconcat([cv2.hconcat(list_h) for list_h in list_2d])
+            h, w = frame.shape[:2]
 
-  # Main loop
-  def get_frame(self):
-     if self.vid.isOpened():
+            if ret:  # image processing here
 
-       ret, frame = self.vid.read()
+                if self.quad_num == 1:  # quad 1
+                    x_coord = 0
+                    y_coord = 0
+                elif self.quad_num == 2:  # quad 2
+                    x_coord = 1280.0/2
+                    y_coord = 0
+                elif self.quad_num == 3:  # quad 3
+                    x_coord = 0
+                    y_coord = 720.0/2
+                else:  # quad 4
+                    x_coord = 1280.0/2
+                    y_coord = 720.0/2
+                    
+                self.imgOut = fw.Quadrant(
+                    self.quad_num, x_coord, y_coord, fw.imgTemp4, fw.imgMask4)
 
-       h, w = frame.shape[:2]
+                return (ret, self.imgOut.Extract_Quadrant())
+            else:
+                return (ret, None)
+        else:
+            return (ret, None)
 
-       if ret: #image processing here
-        imgIn = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB) 
-
-        imgIn = cv2.resize(imgIn, (w, h), interpolation=cv2.INTER_AREA)
-        
-        K = 0.05
-        cv2.addWeighted( imgIn, K, self.imgAve, (1-K), K, self.imgAve);    
-        
-        imgDiff = cv2.absdiff(imgIn,self.imgRef) 
-        
-        # create mask from imgDiff
-        imgDiff = cv2.absdiff(imgIn,self.imgRef) 
-        imgDiff = np.max(imgDiff, axis = 2)
-        ret, imgMask = cv2.threshold(imgDiff,self.threshold,255,cv2.THRESH_BINARY)
-        
-        # Process Mask using Dilate-Erode
-        kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(3,3))
-        img_erosion = cv2.erode(imgMask, kernel, iterations=1)
-        img_dilation = cv2.dilate(img_erosion, kernel, iterations=2)
-        img_erosion = cv2.erode(img_dilation, kernel, iterations=1)
-        imgMask2 = img_erosion
-        
-        # Process Mask using Contours
-        threshold_area = 50
-        contours, hierarchy = cv2.findContours(image=imgMask2, mode=cv2.RETR_EXTERNAL, method=cv2.CHAIN_APPROX_SIMPLE)
-    
-        imgContours1 = imgIn.copy()
-        cv2.drawContours(imgContours1,contours,-1,(0,255,255),1)
-        
-        #imgResult = imgInSmall.copy()
-        self.imgContours2[:] = 0 # reset image to zero
-        self.imgMask3[:] = 0     # reset image to zero
-        
-        selectContours = []  # select and copy items into list to avoid 
-                             #  deleting element from a list while looping on it
-        for c in contours: 
-            rect = cv2.minAreaRect(c)  
-            (xR, yR), (wR, hR), angle = rect
-            area = cv2.contourArea(c)         
-            if ((area > threshold_area) and (wR > 5) and (hR > 5)):                   
-                 selectContours.append(c)
-                 
-        for c in selectContours:
-            #rect = cv2.minAreaRect(c)     
-            #box = cv2.boxPoints(rect)
-            #box = np.int0(box)            
-            #cv2.drawContours(imgContours2,[box],0,(0,0,255),2)
-            cv2.drawContours(self.imgContours2, [c], 0, (0,0,255), 1)
-            xc,yc,wc,hc = cv2.boundingRect(c)
-            cv2.rectangle(self.imgContours2,(xc,yc),(xc+wc,yc+hc),(0,255,255),2)
-            cv2.drawContours(self.imgMask3, [c], 0, 255, -1)        
-        
-        # Cut out foreground object from imgIn using mask
-        imgOut = cv2.bitwise_and(imgIn, imgIn, mask = self.imgMask3)
-        
-        # Layout and Display Results in One Window
-        imgResults= self.concat_vh( [[imgIn, self.imgAve],
-                                [self.imgRef, imgOut]]) 
-        return (ret, imgResults)
-       else:
-        return (ret, None)
-     else:
-      return (ret, None)
 
 # Create a window and pass it to the Application object
 App(tkinter.Tk(), "FYP")
