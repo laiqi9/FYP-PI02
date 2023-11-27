@@ -24,15 +24,15 @@ class App:
     def __init__(self, window, window_title, video_source=1):
         self.window = window
         self.window.title(window_title)
-        self.window.geometry("1280x720")
+        self.window.geometry("1300x750")
 
         self.vids = []
 
         # open video source, declare as self.vid
-        self.vids.append(MyVideoCapture(video_source, 0))
         self.vids.append(MyVideoCapture(video_source, 1))
         self.vids.append(MyVideoCapture(video_source, 2))
         self.vids.append(MyVideoCapture(video_source, 3))
+        self.vids.append(MyVideoCapture(video_source, 4))
 
         # create a canvas that can fit the video source size
         self.canvas = tkinter.Canvas(window, width=1280, height=720)
@@ -93,29 +93,23 @@ class App:
 
     # keep running and displaying video
     def update(self):
-        quad_display=0
-        x_coord = 0
-        y_coord = 0
-        for vid in self.vids:
-            ret, frame = vid.get_frame()
-            
-            if quad_display == 1:  # quad 1
-                x_coord = 0
-                y_coord = 0
-            elif quad_display == 2:  # quad 2
-                x_coord = 1280.0/2
-                y_coord = 0
-            elif quad_display == 3:  # quad 3
-                x_coord = 0
-                y_coord = 720.0/2
-            else:  # quad 4
-                x_coord = 1280.0/2
-                y_coord = 720.0/2
-
-            self.photo = ImageTk.PhotoImage(image=Image.fromarray(frame))
-            self.canvas.create_image(
-                x_coord, y_coord, image=self.photo, ancho=tkinter.NW)
-            quad_display += 1
+        
+        ret0, frame0 = self.vids[0].get_frame()
+        self.photo0 = ImageTk.PhotoImage(image=Image.fromarray(frame0))
+        self.canvas.create_image(0, 0, image=self.photo0, ancho=tkinter.NW)
+        
+        ret1, frame1 = self.vids[1].get_frame()
+        self.photo1 = ImageTk.PhotoImage(image=Image.fromarray(frame1))
+        self.canvas.create_image(1280.0/2, 0, image=self.photo1, ancho=tkinter.NW)
+        
+        ret2, frame2 = self.vids[2].get_frame()
+        self.photo2 = ImageTk.PhotoImage(image=Image.fromarray(frame2))
+        self.canvas.create_image(0, 720.0/2, image=self.photo2, ancho=tkinter.NW)
+        
+        ret3, frame3 = self.vids[3].get_frame()
+        self.photo3 = ImageTk.PhotoImage(image=Image.fromarray(frame3))
+        self.canvas.create_image(1280.0/2, 720.0/2, image=self.photo3, ancho=tkinter.NW)
+        
         self.window.after(self.delay, self.update)
 
 
@@ -167,6 +161,7 @@ class MyVideoCapture:
         self.threshold = 20
         
         self.imgOut = np.zeros((int(self.height), int(self.width), 3), dtype = "uint8")
+        self.imgIn = np.zeros((int(self.height), int(self.width), 3), dtype = "uint8")
 
     # take a snapshot and set to imgRef
     '''
@@ -202,20 +197,28 @@ class MyVideoCapture:
                 if self.quad_num == 1:  # quad 1
                     x_coord = 0
                     y_coord = 0
+                    self.imgIn = fw.Quadrant(
+                        self.quad_num, x_coord, y_coord, fw.imgTemp, fw.imgMask)
                 elif self.quad_num == 2:  # quad 2
                     x_coord = 1280.0/2
                     y_coord = 0
+                    self.imgIn = fw.Quadrant(
+                        self.quad_num, x_coord, y_coord, fw.imgTemp2, fw.imgMask2)
                 elif self.quad_num == 3:  # quad 3
                     x_coord = 0
                     y_coord = 720.0/2
+                    self.imgIn = fw.Quadrant(
+                        self.quad_num, x_coord, y_coord, fw.imgTemp3, fw.imgMask3)
                 else:  # quad 4
                     x_coord = 1280.0/2
                     y_coord = 720.0/2
-                    
-                self.imgOut = fw.Quadrant(
-                    self.quad_num, x_coord, y_coord, fw.imgTemp4, fw.imgMask4)
+                    self.imgIn = fw.Quadrant(
+                        self.quad_num, x_coord, y_coord, fw.imgTemp4, fw.imgMask4)
+                
+                self.imgOut=self.imgIn.Extract_Quadrant()
+                self.imgOut=cv2.cvtColor(self.imgOut, cv2.COLOR_BGR2RGB) 
 
-                return (ret, self.imgOut.Extract_Quadrant())
+                return (ret, self.imgOut)
             else:
                 return (ret, None)
         else:
