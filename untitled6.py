@@ -93,23 +93,35 @@ class App:
 
     # keep running and displaying video
     def update(self):
-        
+
         ret0, frame0 = self.vids[0].get_frame()
-        self.photo0 = ImageTk.PhotoImage(image=Image.fromarray(frame0))
-        self.canvas.create_image(0, 0, image=self.photo0, ancho=tkinter.NW)
-        
         ret1, frame1 = self.vids[1].get_frame()
-        self.photo1 = ImageTk.PhotoImage(image=Image.fromarray(frame1))
-        self.canvas.create_image(1280.0/2, 0, image=self.photo1, ancho=tkinter.NW)
-        
         ret2, frame2 = self.vids[2].get_frame()
-        self.photo2 = ImageTk.PhotoImage(image=Image.fromarray(frame2))
-        self.canvas.create_image(0, 720.0/2, image=self.photo2, ancho=tkinter.NW)
-        
         ret3, frame3 = self.vids[3].get_frame()
-        self.photo3 = ImageTk.PhotoImage(image=Image.fromarray(frame3))
-        self.canvas.create_image(1280.0/2, 720.0/2, image=self.photo3, ancho=tkinter.NW)
-        
+
+        if ret0 and ret1 and ret2 and ret3:
+            self.photo0 = ImageTk.PhotoImage(image=Image.fromarray(frame0))
+            self.canvas.create_image(0, 0, image=self.photo0, ancho=tkinter.NW)
+    
+            self.photo1 = ImageTk.PhotoImage(image=Image.fromarray(frame1))
+            self.canvas.create_image(
+                1280.0/2, 0, image=self.photo1, ancho=tkinter.NW)
+    
+            self.photo2 = ImageTk.PhotoImage(image=Image.fromarray(frame2))
+            self.canvas.create_image(
+                0, 720.0/2, image=self.photo2, ancho=tkinter.NW)
+    
+            self.photo3 = ImageTk.PhotoImage(image=Image.fromarray(frame3))
+            self.canvas.create_image(
+                1280.0/2, 720.0/2, image=self.photo3, ancho=tkinter.NW)
+        else:
+            print("Cannot open")
+            
+        if ret0: print("ret0")
+        if ret1: print("ret1")
+        if ret2: print("ret2")
+        if ret3: print("ret3")
+
         self.window.after(self.delay, self.update)
 
 
@@ -140,7 +152,7 @@ class MyVideoCapture:
     # runs once upon startup
     def __init__(self, video_source, quad_num):
         # Open the video source
-        self.vid = cv2.VideoCapture(video_source)
+        self.vid = cv2.VideoCapture(1)
         if not self.vid.isOpened():
             raise ValueError("Unable to open video source ", quad_num)
 
@@ -159,9 +171,15 @@ class MyVideoCapture:
 
         # Other Variable
         self.threshold = 20
+
+        self.imgOut = np.zeros(
+            (int(self.height), int(self.width), 3), dtype="uint8")
+        self.imgIn = np.zeros(
+            (int(self.height), int(self.width), 3), dtype="uint8")
         
-        self.imgOut = np.zeros((int(self.height), int(self.width), 3), dtype = "uint8")
-        self.imgIn = np.zeros((int(self.height), int(self.width), 3), dtype = "uint8")
+        self.imgOut=fw.fw()
+        self.imgOut= self.imgOut.update()
+        cv2.imshow("i hate it here", self.imgOut)
 
     # take a snapshot and set to imgRef
     '''
@@ -183,22 +201,22 @@ class MyVideoCapture:
             self.vid.release()
             cv2.destroyAllWindows()
             print("Stream ended")
-
+            
+        self.imgOut.quit() 
+            
     # Main loop
     def get_frame(self):
         if self.vid.isOpened():
 
             ret, frame = self.vid.read()
 
-            h, w = frame.shape[:2]
-
             if ret:  # image processing here
 
-                if self.quad_num == 1:  # quad 1
-                    x_coord = 0
-                    y_coord = 0
-                    self.imgIn = fw.Quadrant(
-                        self.quad_num, x_coord, y_coord, fw.imgTemp, fw.imgMask)
+                #if self.quad_num == 1:  # quad 1
+                
+                print("img")
+                
+                '''
                 elif self.quad_num == 2:  # quad 2
                     x_coord = 1280.0/2
                     y_coord = 0
@@ -214,11 +232,14 @@ class MyVideoCapture:
                     y_coord = 720.0/2
                     self.imgIn = fw.Quadrant(
                         self.quad_num, x_coord, y_coord, fw.imgTemp4, fw.imgMask4)
-                
-                self.imgOut=self.imgIn.Extract_Quadrant()
-                self.imgOut=cv2.cvtColor(self.imgOut, cv2.COLOR_BGR2RGB) 
 
-                return (ret, self.imgOut)
+                    self.imgOut = cv2.cvtColor(
+                        self.imgIn.Extract_Quadrant(), cv2.COLOR_BGR2RGB)
+
+                    self.imgOut = cv2.resize(
+                        self.imgOut, (int(1280.0/2), int(720.0/2)), interpolation=cv2.INTER_AREA)
+                    '''
+                return (ret, frame)
             else:
                 return (ret, None)
         else:
