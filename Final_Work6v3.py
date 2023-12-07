@@ -569,6 +569,18 @@ while (bLoop):
 # Quit Program with Proper HouseKeeping    
 quit(cap)
 
+def imgInGet():
+    global imgIn
+    return imgIn
+
+def imgAvgAoiGet():
+    global imgAvgAoi
+    return imgAvgAoi
+
+def imgRefMaskGet():
+    global imgRefMask
+    return imgRefMask
+
 # Masking Reference - https://www.digitalocean.com/community/tutorials/arithmetic-bitwise-and-masking-python-opencv
 # Find Image Difference - https://stackoverflow.com/questions/56183201/detect-and-visualize-differences-between-two-images-with-opencv-python
 # Find Contours - https://learnopencv.com/contour-detection-using-opencv-python-c/#:~:text=Find%20the%20Contours,the%20contours%20in%20the%20image.
