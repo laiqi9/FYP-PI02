@@ -6,12 +6,13 @@ import time
 
 
 class MyVideoCapture:
-    def __init__(self, video_source, quad_num):
+    def __init__(self, quad_num, video_source=1):
         classesFilename = "./dnn_yolov4/obj.names"
         configFilename = "./dnn_yolov4/yolov4-FYP.cfg"
         weightsFilename = "./dnn_yolov4/yolov4-FYP.weights"
 
         self.vid = cv2.VideoCapture(video_source)
+        ret, frame = self.vid.read()
         self.net = cv2.dnn.readNetFromDarknet(configFilename, weightsFilename)
         self.net.setPreferableBackend(cv2.dnn.DNN_BACKEND_CUDA)
         self.net.setPreferableTarget(cv2.dnn.DNN_TARGET_CUDA)
@@ -78,30 +79,45 @@ class MyVideoCapture:
         # screen res
         self.x_screen = 1920
         self.y_screen = 1080
+        
+        #drawing rectangles
+        self.ix = 0
+        self.endx = 0
+        self.iy = 0
+        self.endy = 0
+
+    # run upon destruction of object
+    def __del__(self):
+        # Release the video source when the object is destroyed
+        if self.vid.isOpened():
+            self.vid.release()
+            cv2.destroyAllWindows()
+            print("Stream ended")
 
     def load_classes(self, classes_filename):
         self.classes = []
         with open(classes_filename, 'r') as f:
             self.classes = [line.strip() for line in f.readlines()]
         self.layer_name = self.net.getLayerNames()
-        self.output_layer = [self.layer_name[i - 1] for i in self.net.getUnconnectedOutLayers()]
+        self.output_layer = [self.layer_name[i - 1]
+                             for i in self.net.getUnconnectedOutLayers()]
         return self.classes
 
     def split_frame(self, merged_frame):
-        height, width = (1280, 720)
+        height, width, _ = merged_frame.shape
 
         # using 4 as default rn for num_quads
         hheight = int(height/2)  # half height
         hwidth = int(width/2)  # half width
 
         if self.quad_num == 1:
-            quad = merged_frame[:hheight, :hwidth]
+            quad = merged_frame[0:hheight, 0:hwidth]
         elif self.quad_num == 2:
-            quad = merged_frame[:hheight, hwidth:]
+            quad = merged_frame[0:hheight, hwidth:1280]
         elif self.quad_num == 3:
-            quad = merged_frame[hheight:, :hwidth]
+            quad = merged_frame[hheight:720, 0:hwidth]
         else:
-            quad = merged_frame[hheight:, hwidth:]
+            quad = merged_frame[hheight:720, hwidth:2380]
 
         return quad
 
@@ -239,11 +255,16 @@ class MyVideoCapture:
 
     def get_frame(self):
         if self.vid.isOpened():
+            width = self.width
+            height = self.height
             ret, frame = self.vid.read()
-            frame = self.split_frame(frame)
             if ret:
-                self.imgIn = cv2.resize(frame, (int(self.width), int(self.height)),
-                                        interpolation=cv2.INTER_AREA)
+                iwidth = int(width)
+                iheight = int(height)
+                frame = self.split_frame(frame)
+
+                self.imgIn = cv2.resize(
+                    frame, (iwidth, iheight), interpolation=cv2.INTER_AREA)
                 self.imgIn2 = self.imgIn.copy()  # Used for extracting and expanding quadrants
                 self.imgIn3 = self.imgIn.copy()  # Used for taking average
                 self.imgin = self.imgIn.copy()
@@ -254,6 +275,8 @@ class MyVideoCapture:
                 # Convert averaged ImgIn3 to uint8 data type for bitwise operation
                 imgAverage_uint8 = self.imgAverage.astype(np.uint8)
 
+                if (self.ix > 0) and (self.endx > 0):
+                    self.imgInDraw = cv2.rectangle(self.imgInDraw, (self.ix, self.iy), (self.endx, self.endy), (255, 0, 0), -1)
                 # Extract interested portions of each quadrant
                 # Extracts corresponding pixels bounded within white rectangle
                 imgAveragewMask = cv2.bitwise_and(
@@ -322,78 +345,77 @@ class MyVideoCapture:
                             cx = int(M["m10"]/M["m00"])
                             cy = int(M["m01"]/M["m00"])
 
-                            '''
                             # Hightlight quadrant where centre of image difference is detected using its coordinates
                             if (cx < (width / 2)) & (cy < (height / 2)):
                                 if RefClassID1 != LiveClassID1:
                                     cv2.rectangle(
-                                        imgIn, (0, 0), (int(width / 2), int(height / 2)), (0, 0, 255), 5)
+                                        self.imgIn, (0, 0), (int(width / 2), int(height / 2)), (0, 0, 255), 5)
                                     cv2.rectangle(
-                                        imgIn, (x, y), (x + w, y + h), (0, 0, 255), 3)
+                                        self.imgIn, (x, y), (x + w, y + h), (0, 0, 255), 3)
                                     cv2.putText(
-                                        imgIn, miss1 + obs1, (0, 5), font, 0.5, (0, 255, 255), 1)
+                                        self.imgIn, miss1 + obs1, (0, 5), font, 0.5, (0, 255, 255), 1)
                                     #send_to_telegram("Difference detected!")
                                 if RefClassID1 == LiveClassID1:
                                     pass
                                 if (RefClassID1 == []) & (LiveClassID1 == []):
                                     cv2.rectangle(
-                                        imgIn, (x, y), (x + w, y + h), (0, 0, 255), 3)
+                                        self.imgIn, (x, y), (x + w, y + h), (0, 0, 255), 3)
                                     cv2.rectangle(
-                                        imgIn, (0, 0), (int(width / 2), int(height / 2)), (0, 0, 255), 5)
+                                        self.imgIn, (0, 0), (int(width / 2), int(height / 2)), (0, 0, 255), 5)
                                     #send_to_telegram("Difference detected!")
                             if (cx > (width / 2)) & (cy < (height / 2)):
                                 if RefClassID2 != LiveClassID2:
                                     cv2.rectangle(
-                                        imgIn, (int(width / 2), 0), (int(width), int(height / 2)), (0, 0, 255), 5)
+                                        self.imgIn, (int(width / 2), 0), (int(width), int(height / 2)), (0, 0, 255), 5)
                                     cv2.putText(
-                                        imgIn, miss2 + obs2, (645, 5), font, 0.5, (0, 255, 255), 1)
+                                        self.imgIn, miss2 + obs2, (645, 5), font, 0.5, (0, 255, 255), 1)
                                     cv2.rectangle(
-                                        imgIn, (0, int(height / 2)), (int(width / 2), int(height)), (0, 0, 255), 5)
+                                        self.imgIn, (0, int(height / 2)), (int(width / 2), int(height)), (0, 0, 255), 5)
                                     #send_to_telegram("Difference detected!")
                                 if RefClassID2 == LiveClassID2:
                                     pass
                                 if (RefClassID2 == []) & (LiveClassID2 == []):
                                     cv2.rectangle(
-                                        imgIn, (0, int(height / 2)), (int(width / 2), int(height)), (0, 0, 255), 5)
+                                        self.imgIn, (0, int(height / 2)), (int(width / 2), int(height)), (0, 0, 255), 5)
                                     cv2.rectangle(
-                                        imgIn, (x, y), (x + w, y + h), (0, 0, 255), 3)
+                                        self.imgIn, (x, y), (x + w, y + h), (0, 0, 255), 3)
                                     #send_to_telegram("Difference detected!")
                             if (cx < (width / 2)) & (cy > (height / 2)):
                                 if RefClassID3 != LiveClassID3:
                                     cv2.rectangle(
-                                        imgIn, (0, int(height / 2)), (int(width / 2), int(height)), (0, 0, 255), 5)
+                                        self.imgIn, (0, int(height / 2)), (int(width / 2), int(height)), (0, 0, 255), 5)
                                     cv2.rectangle(
-                                        imgIn, (x, y), (x + w, y + h), (0, 0, 255), 3)
+                                        self.imgIn, (x, y), (x + w, y + h), (0, 0, 255), 3)
                                     cv2.putText(
-                                        imgIn, miss3 + obs3, (0, 365), font, 0.5, (0, 255, 255), 1)
+                                        self.imgIn, miss3 + obs3, (0, 365), font, 0.5, (0, 255, 255), 1)
                                     #send_to_telegram("Difference detected!")
                                 if RefClassID3 == LiveClassID3:
                                     pass  # print()
                                 if (RefClassID3 == []) & (LiveClassID3 == []):
                                     cv2.rectangle(
-                                        imgIn, (0, int(height / 2)), (int(width / 2), int(height)), (0, 0, 255), 5)
+                                        self.imgIn, (0, int(height / 2)), (int(width / 2), int(height)), (0, 0, 255), 5)
                                     cv2.rectangle(
-                                        imgIn, (x, y), (x + w, y + h), (0, 0, 255), 3)
+                                        self.imgIn, (x, y), (x + w, y + h), (0, 0, 255), 3)
                                     #send_to_telegram("Difference detected!")
 
                             if (cx > (width / 2)) & (cy > (height / 2)):
                                 if RefClassID4 != LiveClassID4:
-                                    cv2.rectangle(imgIn, (int(
+                                    cv2.rectangle(self.imgIn, (int(
                                         width / 2), int(height / 2)), (int(width), int(height)), (0, 0, 255), 5)
                                     cv2.rectangle(
-                                        imgIn, (x, y), (x + w, y + h), (0, 0, 255), 3)
+                                        self.imgIn, (x, y), (x + w, y + h), (0, 0, 255), 3)
                                     cv2.putText(
-                                        imgIn, miss4 + obs4, (645, 365), font, 0.5, (0, 255, 255), 1)
+                                        self.imgIn, miss4 + obs4, (645, 365), font, 0.5, (0, 255, 255), 1)
                                     #send_to_telegram("Difference detected!")
                                 if RefClassID4 == LiveClassID4:
                                     pass  # print()
                                 if (RefClassID4 == []) & (LiveClassID4 == []):
-                                    cv2.rectangle(imgIn, (int(
+                                    cv2.rectangle(self.imgIn, (int(
                                         width / 2), int(height / 2)), (int(width), int(height)), (0, 0, 255), 5)
                                     cv2.rectangle(
-                                        imgIn, (x, y), (x + w, y + h), (0, 0, 255), 3)
+                                        self.imgIn, (x, y), (x + w, y + h), (0, 0, 255), 3)
                                     #send_to_telegram("Difference detected!")
-'''
+
                 return (ret, cv2.cvtColor(self.imgIn, cv2.COLOR_BGR2RGB))
             else:
                 return (ret, None)
@@ -405,32 +427,59 @@ class App:
     def __init__(self, window):
         self.window = window
         self.window.title("FYP PI02")
-        self.window.geometry("1280x720")  # Set window size
 
         self.vid = cv2.VideoCapture(1)
 
         self.video_captures = []
 
-        self.video_captures.append(MyVideoCapture(1, 1))
-        self.video_captures.append(MyVideoCapture(1, 2))
-        self.video_captures.append(MyVideoCapture(1, 3))
-        self.video_captures.append(MyVideoCapture(1, 4))
+        self.video_captures.append(MyVideoCapture(1))
+        self.video_captures.append(MyVideoCapture(2))
+        self.video_captures.append(MyVideoCapture(3))
+        self.video_captures.append(MyVideoCapture(4))
 
         # Use the fixed window size
         self.canvas = tk.Canvas(window, width=1280, height=720)
         self.canvas.pack()
 
+        self.canvas.bind('<Motion>', self.mouseMove)
+        self.canvas.bind("<Button-1>", self.startpaint)
+        self.canvas.bind("<ButtonRelease-1>", self.endpaint)
+
+
+        self.btn_snapshot = tk.Button(
+            window, text="Clear Mask", width=30, command=self.clearmask)
+        self.btn_snapshot.pack(side=tk.RIGHT, anchor=tk.NE, expand=True)
+        
+        time.sleep(2)
+
+        self.delay = 15
         self.update()
 
-        # run upon destruction of object
-    def __del__(self):
-        # Release the video source when the object is destroyed
-        if self.cap.isOpened():
-            self.cap.release()
-            cv2.destroyAllWindows()
-            print("Stream ended")
+        self.window.mainloop()
 
-        # split incoming video into four quadrants to process seperately
+    def clearmask(self):
+        self.video_captures[0].imgInDraw.fill(0)
+
+    def mouseMove(self, e):
+        x = e.x
+        y = e.y
+        print("Mouse: ", x, y)
+        
+    def startpaint(self, event):
+        self.video_captures[0].iy
+        self.video_captures[0].iy, self.video_captures[0].ix, self.video_captures[0].endx, self.video_captures[0].endy
+
+        print("AHHHHHHHHHHHHHHHHHHHHHHHHH", self.video_captures[0].ix,
+              self.video_captures[0].iy, self.video_captures[0].endx, self.video_captures[0].endy)
+        self.drawing = True
+        self.video_captures[0].ix, self.video_captures[0].iy = (event.x, event.y)
+
+    def endpaint(self, event):
+        self.video_captures[0].endx, self.video_captures[0].endy
+
+        print("ENDDDDDDDDDDDDDDDDDDDD", self.video_captures[0].endx, self.video_captures[0].endy)
+        self.drawing = False
+        self.video_captures[0].endx, self.video_captures[0].endy = (event.x, event.y)
 
     def update(self):
         frames = []
@@ -456,7 +505,7 @@ class App:
         self.photo = ImageTk.PhotoImage(image=merged_image)
         self.canvas.create_image(0, 0, image=self.photo, anchor=tk.NW)
 
-        self.window.after(10, self.update)
+        self.window.after(self.delay, self.update)
 
 
 def main():
