@@ -577,7 +577,6 @@ quit(cap)
 # HSV - https://cvexplained.wordpress.com/2020/04/28/color-detection-hsv/#:~:text=In%20OpenCV%2C%20Hue%20has%20values,255%2C%200%2D255).
 # HSV Additional - https://dontrepeatyourself.org/post/color-based-object-detection-with-opencv-and-python/
 # Object outline from: https://www.geeksforgeeks.org/find-co-ordinates-of-contours-using-opencv-python/
-# Image Cropping from: https://pyimagesearch.com/2015/03/09/capturing-mouse-click-events-with-python-and-opencv/
 # Find centre point of contour: https://www.geeksforgeeks.org/python-opencv-find-center-of-contour/
 # Find centre point of contours 2: https://learnopencv.com/find-center-of-blob-centroid-using-opencv-cpp-python/
 # Package Python Code: https://towardsdatascience.com/how-to-easily-convert-a-python-script-to-an-executable-file-exe-4966e253c7e9
