@@ -3,10 +3,11 @@ import cv2
 import time
 from PIL import Image, ImageTk
 import numpy as np
- 
+
+
 class App:
   #__init__ runs once upon startup
-  def __init__(self, window, window_title, video_source=0):
+  def __init__(self, window, window_title, video_source=1):
     self.window = window
     self.window.title(window_title)
 
