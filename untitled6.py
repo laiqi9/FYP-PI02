@@ -4,7 +4,6 @@ from PIL import Image, ImageTk
 import numpy as np
 import time
 
-
 class MyVideoCapture:
     def __init__(self, quad_num, video_source=1):
         classesFilename = "./dnn_yolov4/obj.names"
@@ -77,10 +76,10 @@ class MyVideoCapture:
         self.upper = np.array([255, 255, 255])
 
         # screen res
-        self.x_screen = 1920
-        self.y_screen = 1080
-        
-        #drawing rectangles
+        self.x_screen = 1280
+        self.y_screen = 720
+
+        # drawing rectangles
         self.ix = 0
         self.endx = 0
         self.iy = 0
@@ -120,6 +119,10 @@ class MyVideoCapture:
             quad = merged_frame[hheight:720, hwidth:2380]
 
         return quad
+    
+    def ref_capture (self):
+        self.imgRef=self.imgIn.copy()
+        print("captured ref")
 
     def detect_objects(self, img):
         blob = cv2.dnn.blobFromImage(
@@ -274,9 +277,18 @@ class MyVideoCapture:
                 cv2.accumulateWeighted(self.imgIn3, self.imgAverage, 0.005)
                 # Convert averaged ImgIn3 to uint8 data type for bitwise operation
                 imgAverage_uint8 = self.imgAverage.astype(np.uint8)
+                if(self.ix>640):
+                    self.ix=self.ix-640
+                if(self.endx>640):
+                    self.endx=self.endx-640
+                if(self.iy>360):
+                    self.iy=self.iy-360
+                if(self.endy>360):
+                    self.endy=self.endy-360
 
                 if (self.ix > 0) and (self.endx > 0):
-                    self.imgInDraw = cv2.rectangle(self.imgInDraw, (self.ix, self.iy), (self.endx, self.endy), (255, 0, 0), -1)
+                    self.imgInDraw = cv2.rectangle(
+                        self.imgInDraw, (self.ix, self.iy), (self.endx, self.endy), (255, 0, 255), -1)
                 # Extract interested portions of each quadrant
                 # Extracts corresponding pixels bounded within white rectangle
                 imgAveragewMask = cv2.bitwise_and(
@@ -323,10 +335,10 @@ class MyVideoCapture:
 
                 RefClassID1, RefClassID2, RefClassID3, RefClassID4 = self.detect_objects(
                     imgRefMask)
-                print('refClass3', RefClassID3)
+                #print('refClass3', RefClassID3)
                 LiveClassID1, LiveClassID2, LiveClassID3, LiveClassID4 = self.detect_objects(
                     imgAvgAoi)  # (imgAveragewMask)
-                print('LiveClass3', LiveClassID3)
+                #print('LiveClass3', LiveClassID3)
                 miss1, obs1 = self.CompwRef(RefClassID1, LiveClassID1)
                 miss2, obs2 = self.CompwRef(RefClassID2, LiveClassID2)
                 miss3, obs3 = self.CompwRef(RefClassID3, LiveClassID3)
@@ -427,6 +439,8 @@ class App:
     def __init__(self, window):
         self.window = window
         self.window.title("FYP PI02")
+        
+        self.active_quad=0 #set active quadrant
 
         self.vid = cv2.VideoCapture(1)
 
@@ -445,41 +459,89 @@ class App:
         self.canvas.bind("<Button-1>", self.startpaint)
         self.canvas.bind("<ButtonRelease-1>", self.endpaint)
 
-
-        self.btn_snapshot = tk.Button(
+        #buttons
+        self.btn_clearmask = tk.Button(
             window, text="Clear Mask", width=30, command=self.clearmask)
+        self.btn_clearmask.pack(side=tk.RIGHT, anchor=tk.NE, expand=True)
+        self.btn_snapshot = tk.Button(
+            window, text="Take Reference", width=30, command=self.video_captures[self.active_quad].ref_capture())
         self.btn_snapshot.pack(side=tk.RIGHT, anchor=tk.NE, expand=True)
-        
-        time.sleep(2)
 
+        #quad buttons
+        self.btn_Q1 = tk.Button(
+            window, text="Q1", width=15, relief="raised", command= lambda: self.toggle(1))
+        self.btn_Q2 = tk.Button(
+            window, text="Q2", width=15, relief="raised", command= lambda: self.toggle(2))
+        self.btn_Q3 = tk.Button(
+            window, text="Q3", width=15, relief="raised", command= lambda: self.toggle(3))
+        self.btn_Q4 = tk.Button(
+            window, text="Q4", width=15, relief="raised", command= lambda: self.toggle(4))
+        
+        self.btn_Q1.pack(anchor=tk.CENTER, expand=True)
+        self.btn_Q2.pack(anchor=tk.CENTER, expand=True)
+        self.btn_Q3.pack(anchor=tk.CENTER, expand=True)
+        self.btn_Q4.pack(anchor=tk.CENTER, expand=True)
+        
+        # after called once, update auto called
         self.delay = 15
         self.update()
 
         self.window.mainloop()
 
+    def toggle(self, quad):
+        if quad==1:
+            self.btn_Q1.config(relief="sunken")
+            self.btn_Q2.config(relief="raised")
+            self.btn_Q3.config(relief="raised")
+            self.btn_Q4.config(relief="raised")
+        elif quad==2:
+            self.btn_Q1.config(relief="raised")
+            self.btn_Q2.config(relief="sunken")
+            self.btn_Q3.config(relief="raised")
+            self.btn_Q4.config(relief="raised")
+        elif quad==3:
+            self.btn_Q1.config(relief="raised")
+            self.btn_Q2.config(relief="raised")
+            self.btn_Q3.config(relief="sunken")
+            self.btn_Q4.config(relief="raised")
+        elif quad==4:
+            self.btn_Q1.config(relief="raised")
+            self.btn_Q2.config(relief="raised")
+            self.btn_Q3.config(relief="raised")
+            self.btn_Q4.config(relief="sunken")
+        
+        self.active_quad=quad-1 #0 indexed array of video_captures vs 1 indexed quad in this function
+        print(self.active_quad)
+
     def clearmask(self):
-        self.video_captures[0].imgInDraw.fill(0)
+        self.video_captures[self.active_quad].imgMask.fill(0)
+        self.video_captures[self.active_quad].imgTemp.fill(0)
+        self.video_captures[self.active_quad].imgInDraw.fill(0)
+        
 
     def mouseMove(self, e):
         x = e.x
         y = e.y
         print("Mouse: ", x, y)
-        
-    def startpaint(self, event):
-        self.video_captures[0].iy
-        self.video_captures[0].iy, self.video_captures[0].ix, self.video_captures[0].endx, self.video_captures[0].endy
 
-        print("AHHHHHHHHHHHHHHHHHHHHHHHHH", self.video_captures[0].ix,
-              self.video_captures[0].iy, self.video_captures[0].endx, self.video_captures[0].endy)
+    def startpaint(self, event):
+        self.video_captures[self.active_quad].iy
+        self.video_captures[self.active_quad].iy, self.video_captures[self.active_quad].ix, self.video_captures[self.active_quad].endx, self.video_captures[self.active_quad].endy
+
+        print("AHHHHHHHHHHHHHHHHHHHHHHHHH", self.video_captures[self.active_quad].ix,
+              self.video_captures[self.active_quad].iy, self.video_captures[self.active_quad].endx, self.video_captures[self.active_quad].endy)
         self.drawing = True
-        self.video_captures[0].ix, self.video_captures[0].iy = (event.x, event.y)
+        self.video_captures[self.active_quad].ix, self.video_captures[self.active_quad].iy = (
+            event.x, event.y)
 
     def endpaint(self, event):
-        self.video_captures[0].endx, self.video_captures[0].endy
+        self.video_captures[self.active_quad].endx, self.video_captures[self.active_quad].endy
 
-        print("ENDDDDDDDDDDDDDDDDDDDD", self.video_captures[0].endx, self.video_captures[0].endy)
+        print("ENDDDDDDDDDDDDDDDDDDDD",
+              self.video_captures[self.active_quad].endx, self.video_captures[self.active_quad].endy)
         self.drawing = False
-        self.video_captures[0].endx, self.video_captures[0].endy = (event.x, event.y)
+        self.video_captures[self.active_quad].endx, self.video_captures[self.active_quad].endy = (
+            event.x, event.y)
 
     def update(self):
         frames = []
