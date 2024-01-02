@@ -2,7 +2,7 @@ import tkinter as tk
 import cv2
 from PIL import Image, ImageTk
 import numpy as np
-import time
+import time, datetime   
 
 class MyVideoCapture:
     def __init__(self, quad_num, video_source=1):
@@ -255,6 +255,30 @@ class MyVideoCapture:
             else:
                 print()
         return miss, obs
+     
+    # Create class that acts as a countdown
+    def countdown1(self):
+     
+        # Calculate the total number of seconds
+        total_seconds = 3
+        
+        # While loop that checks if total_seconds reaches zero
+        # If not zero, decrement total time by one second
+        while total_seconds > 0 and self.quad:
+     
+            # Timer represents time left on countdown
+            timer = datetime.timedelta(seconds = total_seconds)
+            
+            # Prints the time left on the timer
+            print(timer, end="\r")
+     
+            # Delays the program one second
+            time.sleep(1)
+     
+            # Reduces total time by one second
+            total_seconds -= 1
+            
+        self.countedQ1=True
 
     def get_frame(self):
         if self.vid.isOpened():
@@ -370,11 +394,15 @@ class MyVideoCapture:
                                 if RefClassID1 == LiveClassID1:
                                     pass
                                 if (RefClassID1 == []) & (LiveClassID1 == []):
-                                    cv2.rectangle(
-                                        self.imgIn, (x, y), (x + w, y + h), (0, 0, 255), 3)
-                                    cv2.rectangle(
-                                        self.imgIn, (0, 0), (int(width / 2), int(height / 2)), (0, 0, 255), 5)
-                                    #send_to_telegram("Difference detected!")
+                                    self.countdown1()
+                                    if self.countedQ1:
+                                        cv2.rectangle(
+                                            self.imgIn, (x, y), (x + w, y + h), (0, 0, 255), 3)
+                                        cv2.rectangle(
+                                            self.imgIn, (0, 0), (int(width / 2), int(height / 2)), (0, 0, 255), 5)
+                                        #send_to_telegram("Difference detected!")
+                                    else:
+                                        self.countedQ1=False
                             if (cx > (width / 2)) & (cy < (height / 2)):
                                 if RefClassID2 != LiveClassID2:
                                     cv2.rectangle(
@@ -433,7 +461,49 @@ class MyVideoCapture:
                 return (ret, None)
         else:
             return (None, None)
-
+'''
+class Quadrant:
+    def __init__(self, quad_num, x_coord, y_coord, black_rect, green_rect, imgIn2):
+        self.quad_num = quad_num
+        self.x_coord = x_coord
+        self.y_coord = y_coord
+        self.black_rect = black_rect
+        self.green_rect = green_rect
+        
+        self.imgIn2 = imgIn2
+        
+    def Extract_Quadrant(self): # Method to extract, resize and layer AOI on the extracted quadrant   
+                
+        # Extracting the quadrant
+        crop_width = int(1280 / 2)
+        crop_height = int(720 / 2)
+        x = self.x_coord
+        y = self.y_coord
+        crop_Quadrant = self.imgIn2[y:y+crop_height, x:x+crop_width]
+        
+        scale_percent = 1
+        # Resize the quadrant
+        width_resize = int(crop_Quadrant.shape[1] * scale_percent)
+        height_resize = int(crop_Quadrant.shape[0] * scale_percent)
+        dimension = (width_resize, height_resize)
+        resized_quadrant = cv2.resize(crop_Quadrant, dimension, interpolation = cv2.INTER_AREA)
+        cv2.imshow(self.quad_num, resized_quadrant)
+        
+        # Check current quadrant and shift resized quadrant on a specific location on screen
+        if quadrant == 1: cv2.moveWindow(self.quad_num, 0, 0)
+        elif quadrant == 2: cv2.moveWindow(self.quad_num, int(x_screen / 2), 0)
+        elif quadrant == 3: cv2.moveWindow(self.quad_num, 0, int((y_screen / 2) - 70))
+        elif quadrant == 4: cv2.moveWindow(self.quad_num, int(x_screen / 2), int((y_screen / 2) - 70))
+        
+        # Layer AOI on the quadrant
+        layer = cv2.bitwise_or(self.black_rect, resized_quadrant)
+        resized_quadrant = cv2.bitwise_or(layer, self.green_rect) # Convert black rectangle to green rectangle for Area of Interest
+        cv2.imshow(self.quad_num, resized_quadrant)
+    
+cv2.imshow(mainTitle,imgIn)      
+cv2.moveWindow(mainTitle, int((x_screen - width) / 2), int((y_screen - height) / 2)) # Set main window at the centre of the screen
+cv2.setMouseCallback(mainTitle, onMouseButton)   
+'''
 
 class App:
     def __init__(self, window):
@@ -450,9 +520,12 @@ class App:
         self.video_captures.append(MyVideoCapture(2))
         self.video_captures.append(MyVideoCapture(3))
         self.video_captures.append(MyVideoCapture(4))
+        
+        toplevel = tk.Toplevel(window) #'toplevel' can be changed to anything, it is just a variable to hold the top level, 'window' should be whatever variable holds your main window
+        toplevel.title = 'Expanded Quadrant'
 
         # Use the fixed window size
-        self.canvas = tk.Canvas(window, width=1280, height=720)
+        self.canvas = tk.Canvas(window)
         self.canvas.pack()
 
         self.canvas.bind('<Motion>', self.mouseMove)
@@ -466,6 +539,10 @@ class App:
         self.btn_snapshot = tk.Button(
             window, text="Take Reference", width=30, command=self.video_captures[self.active_quad].ref_capture())
         self.btn_snapshot.pack(side=tk.RIGHT, anchor=tk.NE, expand=True)
+        self.btn_snapshot = tk.Button(
+            window, text="Enlarge Quadrant", width=30, command=self.ubt1())
+        self.btn_snapshot.pack(side=tk.RIGHT, anchor=tk.NE, expand=True)
+        
 
         #quad buttons
         self.btn_Q1 = tk.Button(
@@ -561,13 +638,31 @@ class App:
                 x_offset += 640  # Adjust the x-offset for the next frame
                 if x_offset >= 1280:
                     x_offset = 0
-                    # Move to the next row if the width exceeds the window width        for i, frame in enumerate(frames):
+                    # Move to the next row if the width exceeds the window width for i, frame in enumerate(frames):
                     y_offset += 360
 
         self.photo = ImageTk.PhotoImage(image=merged_image)
         self.canvas.create_image(0, 0, image=self.photo, anchor=tk.NW)
 
         self.window.after(self.delay, self.update)
+        
+                
+    def ubt1(self):
+        title="Quadrant" + str(self.active_quad) 
+        # Creating a second Level
+        second = tk.Toplevel()
+        second.title(title) # Rename this
+        # Changing Label text
+        # Creation of Canvas
+        c=tk.Canvas(second)
+        c.pack()
+    
+        # Creation of image object
+        img = cv2.cvtColor(self.video_captures[self.active_quad].imgIn, cv2.COLOR_BGR2RGB)
+        self.picture = ImageTk.PhotoImage(image=img)
+        self.c.create_image(0, 0, image=self.picture, anchor=tk.NW)
+
+        self.second.after(self.delay, self.ubt1())
 
 
 def main():
