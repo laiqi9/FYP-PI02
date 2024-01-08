@@ -394,15 +394,15 @@ class MyVideoCapture:
                                 if RefClassID1 == LiveClassID1:
                                     pass
                                 if (RefClassID1 == []) & (LiveClassID1 == []):
-                                    self.countdown1()
-                                    if self.countedQ1:
-                                        cv2.rectangle(
-                                            self.imgIn, (x, y), (x + w, y + h), (0, 0, 255), 3)
-                                        cv2.rectangle(
-                                            self.imgIn, (0, 0), (int(width / 2), int(height / 2)), (0, 0, 255), 5)
+                                    #self.countdown1()
+                                    #if self.countedQ1:
+                                    cv2.rectangle(
+                                        self.imgIn, (x, y), (x + w, y + h), (0, 0, 255), 3)
+                                    cv2.rectangle(
+                                        self.imgIn, (0, 0), (int(width / 2), int(height / 2)), (0, 0, 255), 5)
                                         #send_to_telegram("Difference detected!")
-                                    else:
-                                        self.countedQ1=False
+                                    #else:
+                                        #self.countedQ1=False
                             if (cx > (width / 2)) & (cy < (height / 2)):
                                 if RefClassID2 != LiveClassID2:
                                     cv2.rectangle(
@@ -521,11 +521,11 @@ class App:
         self.video_captures.append(MyVideoCapture(3))
         self.video_captures.append(MyVideoCapture(4))
         
-        toplevel = tk.Toplevel(window) #'toplevel' can be changed to anything, it is just a variable to hold the top level, 'window' should be whatever variable holds your main window
-        toplevel.title = 'Expanded Quadrant'
+        #toplevel = tk.Toplevel(window) #'toplevel' can be changed to anything, it is just a variable to hold the top level, 'window' should be whatever variable holds your main window
+        #toplevel.title = 'Expanded Quadrant'
 
         # Use the fixed window size
-        self.canvas = tk.Canvas(window)
+        self.canvas = tk.Canvas(window, width=1280, height=720)
         self.canvas.pack()
 
         self.canvas.bind('<Motion>', self.mouseMove)
@@ -539,9 +539,9 @@ class App:
         self.btn_snapshot = tk.Button(
             window, text="Take Reference", width=30, command=self.video_captures[self.active_quad].ref_capture())
         self.btn_snapshot.pack(side=tk.RIGHT, anchor=tk.NE, expand=True)
-        self.btn_snapshot = tk.Button(
-            window, text="Enlarge Quadrant", width=30, command=self.ubt1())
-        self.btn_snapshot.pack(side=tk.RIGHT, anchor=tk.NE, expand=True)
+        #self.btn_snapshot = tk.Button(
+            #window, text="Enlarge Quadrant", width=30, command=self.ubt1())
+        #self.btn_snapshot.pack(side=tk.RIGHT, anchor=tk.NE, expand=True)
         
 
         #quad buttons
@@ -553,6 +553,8 @@ class App:
             window, text="Q3", width=15, relief="raised", command= lambda: self.toggle(3))
         self.btn_Q4 = tk.Button(
             window, text="Q4", width=15, relief="raised", command= lambda: self.toggle(4))
+        
+        time.sleep(2)
         
         self.btn_Q1.pack(anchor=tk.CENTER, expand=True)
         self.btn_Q2.pack(anchor=tk.CENTER, expand=True)
@@ -621,32 +623,50 @@ class App:
             event.x, event.y)
 
     def update(self):
-        frames = []
-        for video_capture in self.video_captures:
-            ret, frame = video_capture.get_frame()
+        image_frames = []
+        
+        for video in self.video_captures:
+            ret, frame = video.get_frame()
             if ret:
-                frame = Image.fromarray(frame)
-                # Resize frames to fit the window
-                frame = frame.resize((640, 360), Image.ANTIALIAS)
-                frames.append(frame)
+                print("img", type(frame))
+                image_frames.append(cv2.resize(frame, (640,360)))
+                
+        merged_image = self.assemble_grid(image_frames)
+        merged_image = Image.fromarray(merged_image)
 
-            merged_image = Image.new('RGB', (1280, 720))
-            x_offset = 0
-            y_offset = 0
-            for frame in frames:
-                merged_image.paste(frame, (x_offset, y_offset))
-                x_offset += 640  # Adjust the x-offset for the next frame
-                if x_offset >= 1280:
-                    x_offset = 0
-                    # Move to the next row if the width exceeds the window width for i, frame in enumerate(frames):
-                    y_offset += 360
-
+        
         self.photo = ImageTk.PhotoImage(image=merged_image)
         self.canvas.create_image(0, 0, image=self.photo, anchor=tk.NW)
-
+    
         self.window.after(self.delay, self.update)
         
-                
+    def concat_vh(self, list_2d):
+        # return final image
+        return cv2.vconcat([cv2.hconcat(list_h) 
+                        for list_h in list_2d])
+    
+    def assemble_grid(self, images):
+        num_images = len(images)
+        grid_size = int(np.sqrt(num_images))
+    
+        # Manually construct grid without NumPy reshape:
+        merged_image = None
+        for row_index in range(grid_size):
+            row_images = images[row_index * grid_size: (row_index + 1) * grid_size]
+            concatenated_row = cv2.hconcat(row_images)
+            if merged_image is None:
+                merged_image = concatenated_row
+            else:
+                merged_image = cv2.vconcat([merged_image, concatenated_row])
+    
+        return merged_image
+   
+    def align_images(self, images):
+        width = max(image.shape[1] for image in images)
+        height = max(image.shape[0] for image in images)
+        aligned_images = [cv2.resize(image, (width, height)) for image in images]
+        return aligned_images
+'''              
     def ubt1(self):
         title="Quadrant" + str(self.active_quad) 
         # Creating a second Level
@@ -658,12 +678,12 @@ class App:
         c.pack()
     
         # Creation of image object
-        img = cv2.cvtColor(self.video_captures[self.active_quad].imgIn, cv2.COLOR_BGR2RGB)
+        img = self.video_captures[self.active_quad].get_frame()
         self.picture = ImageTk.PhotoImage(image=img)
         self.c.create_image(0, 0, image=self.picture, anchor=tk.NW)
 
         self.second.after(self.delay, self.ubt1())
-
+'''
 
 def main():
     # num_cameras = 4  # Change this variable to the number of available cameras
