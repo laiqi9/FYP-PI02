@@ -116,7 +116,7 @@ class MyVideoCapture:
         elif self.quad_num == 3:
             quad = merged_frame[hheight:720, 0:hwidth]
         else:
-            quad = merged_frame[hheight:720, hwidth:2380]
+            quad = merged_frame[hheight:720, hwidth:1280]
 
         return quad
     
