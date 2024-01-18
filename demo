@@ -2,11 +2,11 @@ import tkinter as tk
 import cv2
 from PIL import Image, ImageTk
 import numpy as np
-import time, datetime   
+import time
 import math
 
 class MyVideoCapture:
-    def __init__(self, quad_num, video_source=1):
+    def __init__(self, quad_num, size, video_source=1):
         self.vid = cv2.VideoCapture(video_source)
         ret, frame = self.vid.read()
 
@@ -16,6 +16,7 @@ class MyVideoCapture:
         height = self.height
 
         self.quad_num = quad_num
+        self.size = size
 
         self.mainTitle = "Obstruction Destruction System"
         self.C1 = "Camera 1"
@@ -89,15 +90,19 @@ class MyVideoCapture:
     def split_frame(self, merged_frame):
         height, width, _ = merged_frame.shape
 
-        # using 4 as default rn for num_quads
-        hheight = int(math.sqrt(height))  # half height
-        hwidth = int(math.sqrt(width))  # half width
+        # assuming that the number of squares is a square number (height and width of grid is same number of images)
+        sqsize = int(math.sqrt(height))  # half height
+        sqsize = int(math.sqrt(width))  # half width
 
-        col = self.quad_num%hheight
-        row = self.quad_num/hheight
+        col = self.quad_num % sqsize
+        row = self.quad_num / sqsize
+        
+        hheight = height/sqsize
+        hwidth = width/sqsize
 
-        quad = merged_frame[hheight*row, hwidth*col]
-
+        quad = merged_frame[int((hheight*row)):int((hheight*(row+1))), 
+                            int((hwidth*col)):int((hwidth*(row+1)))]
+        cv2.imshow("ahhh", quad)
         return quad
     
     def ref_capture (self):
@@ -120,50 +125,7 @@ class MyVideoCapture:
             else:
                 return (ret, None)
         else:
-            return (None, None)
-'''
-class Quadrant:
-    def __init__(self, quad_num, x_coord, y_coord, black_rect, green_rect, imgIn2):
-        self.quad_num = quad_num
-        self.x_coord = x_coord
-        self.y_coord = y_coord
-        self.black_rect = black_rect
-        self.green_rect = green_rect
-        
-        self.imgIn2 = imgIn2
-        
-    def Extract_Quadrant(self): # Method to extract, resize and layer AOI on the extracted quadrant   
-                
-        # Extracting the quadrant
-        crop_width = int(1280 / 2)
-        crop_height = int(720 / 2)
-        x = self.x_coord
-        y = self.y_coord
-        crop_Quadrant = self.imgIn2[y:y+crop_height, x:x+crop_width]
-        
-        scale_percent = 1
-        # Resize the quadrant
-        width_resize = int(crop_Quadrant.shape[1] * scale_percent)
-        height_resize = int(crop_Quadrant.shape[0] * scale_percent)
-        dimension = (width_resize, height_resize)
-        resized_quadrant = cv2.resize(crop_Quadrant, dimension, interpolation = cv2.INTER_AREA)
-        cv2.imshow(self.quad_num, resized_quadrant)
-        
-        # Check current quadrant and shift resized quadrant on a specific location on screen
-        if quadrant == 1: cv2.moveWindow(self.quad_num, 0, 0)
-        elif quadrant == 2: cv2.moveWindow(self.quad_num, int(x_screen / 2), 0)
-        elif quadrant == 3: cv2.moveWindow(self.quad_num, 0, int((y_screen / 2) - 70))
-        elif quadrant == 4: cv2.moveWindow(self.quad_num, int(x_screen / 2), int((y_screen / 2) - 70))
-        
-        # Layer AOI on the quadrant
-        layer = cv2.bitwise_or(self.black_rect, resized_quadrant)
-        resized_quadrant = cv2.bitwise_or(layer, self.green_rect) # Convert black rectangle to green rectangle for Area of Interest
-        cv2.imshow(self.quad_num, resized_quadrant)
-    
-cv2.imshow(mainTitle,imgIn)      
-cv2.moveWindow(mainTitle, int((x_screen - width) / 2), int((y_screen - height) / 2)) # Set main window at the centre of the screen
-cv2.setMouseCallback(mainTitle, onMouseButton)   
-'''
+            return (None, None)     
 
 class App:
     def __init__(self, window):
@@ -175,16 +137,21 @@ class App:
         self.vid = cv2.VideoCapture(1)
 
         self.video_captures = []
+        
+        size = 9
 
-        self.video_captures.append(MyVideoCapture(1))
-        self.video_captures.append(MyVideoCapture(2))
-        self.video_captures.append(MyVideoCapture(3))
-        self.video_captures.append(MyVideoCapture(4))
+        self.video_captures.append(MyVideoCapture(0, size))
+        self.video_captures.append(MyVideoCapture(1, size))
+        self.video_captures.append(MyVideoCapture(2, size))
+        self.video_captures.append(MyVideoCapture(3, size))
+        self.video_captures.append(MyVideoCapture(4, size))
 
-        self.video_captures.append(MyVideoCapture(5))
-        self.video_captures.append(MyVideoCapture(6))
-        self.video_captures.append(MyVideoCapture(7))
-        self.video_captures.append(MyVideoCapture(8))
+        self.video_captures.append(MyVideoCapture(5, size))
+        self.video_captures.append(MyVideoCapture(6, size))
+        self.video_captures.append(MyVideoCapture(7, size))
+        self.video_captures.append(MyVideoCapture(8, size))
+        
+        self.active = 1
 
         
         #toplevel = tk.Toplevel(window) #'toplevel' can be changed to anything, it is just a variable to hold the top level, 'window' should be whatever variable holds your main window
@@ -205,6 +172,11 @@ class App:
         self.btn_snapshot = tk.Button(
             window, text="Take Reference", width=30, command=self.video_captures[self.active_quad].ref_capture())
         self.btn_snapshot.pack(side=tk.RIGHT, anchor=tk.NE, expand=True)
+        
+        self.btn_snapshot = tk.Button(
+            window, text="Next Page", width=30, command=self.slide())
+        self.btn_snapshot.pack(side=tk.RIGHT, anchor=tk.NE, expand=True)
+        
         #self.btn_snapshot = tk.Button(
             #window, text="Enlarge Quadrant", width=30, command=self.ubt1())
         #self.btn_snapshot.pack(side=tk.RIGHT, anchor=tk.NE, expand=True)
@@ -264,7 +236,10 @@ class App:
         self.video_captures[self.active_quad].imgInDraw.fill(0)
     
     def slide(self):
-        self.activeimage = 1
+        size = len(self.video_captures)
+        if self.active<=size/4:
+            self.active+=1
+        else: self.active = 1
 
     def mouseMove(self, e):
         x = e.x
@@ -292,7 +267,12 @@ class App:
     def update(self):
         image_frames = []
         
-        for video in self.video_captures:
+        if self.active<=(len(self.video_captures)/4):
+            vids = self.video_captures[((self.active-1)*4):((self.active-1)*4+3)]
+        else:
+            vids = self.video_captures[((self.active-1)*4):]
+        
+        for video in vids:
             ret, frame = video.get_frame()
             if ret:
                 print("img", type(frame))
