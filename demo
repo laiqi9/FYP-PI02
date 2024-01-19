@@ -89,20 +89,27 @@ class MyVideoCapture:
 
     def split_frame(self, merged_frame):
         height, width, _ = merged_frame.shape
+        #print("shape h:", height, "shape w:", width)
 
         # assuming that the number of squares is a square number (height and width of grid is same number of images)
-        sqsize = int(math.sqrt(height))  # half height
-        sqsize = int(math.sqrt(width))  # half width
+        sqsize = int(math.sqrt(9))  # half height
+        sqsize = int(math.sqrt(9))  # half width
 
         col = self.quad_num % sqsize
         row = self.quad_num / sqsize
         
         hheight = height/sqsize
         hwidth = width/sqsize
+        
+        r1 = int((hheight*row))
+        r2 = int(hheight*(row+1))
+        c1 = int((hwidth*col))
+        c2 = int(hwidth*(col+1))
+        
+        print(hheight, hwidth)
+        print(r1, r2, c1, c2)
 
-        quad = merged_frame[int((hheight*row)):int((hheight*(row+1))), 
-                            int((hwidth*col)):int((hwidth*(row+1)))]
-        cv2.imshow("ahhh", quad)
+        quad = merged_frame[r1:r2, c1:c2]
         return quad
     
     def ref_capture (self):
@@ -135,7 +142,7 @@ class App:
         self.active_quad=0 #set active quadrant
 
         self.vid = cv2.VideoCapture(1)
-
+        
         self.video_captures = []
         
         size = 9
@@ -236,10 +243,15 @@ class App:
         self.video_captures[self.active_quad].imgInDraw.fill(0)
     
     def slide(self):
+        self.active = 1
+        
+        '''
         size = len(self.video_captures)
         if self.active<=size/4:
             self.active+=1
         else: self.active = 1
+        print ("active:", self.active)
+        '''
 
     def mouseMove(self, e):
         x = e.x
@@ -268,14 +280,15 @@ class App:
         image_frames = []
         
         if self.active<=(len(self.video_captures)/4):
-            vids = self.video_captures[((self.active-1)*4):((self.active-1)*4+3)]
+            vids = self.video_captures[((self.active-1)*4):((self.active-1)*4+4)]
         else:
             vids = self.video_captures[((self.active-1)*4):]
+        print("image length:", len(vids))
         
         for video in vids:
             ret, frame = video.get_frame()
             if ret:
-                print("img", type(frame))
+                print("img", type(frame), "frame num:", video.quad_num)
                 image_frames.append(cv2.resize(frame, (640,360)))
                 
         merged_image = self.assemble_grid(image_frames)
