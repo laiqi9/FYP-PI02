@@ -95,8 +95,8 @@ class MyVideoCapture:
         sqsize = int(math.sqrt(9))  # half height
         sqsize = int(math.sqrt(9))  # half width
 
-        col = self.quad_num % sqsize
-        row = self.quad_num / sqsize
+        col = int(self.quad_num % sqsize)
+        row = int(self.quad_num / sqsize)
         
         hheight = height/sqsize
         hwidth = width/sqsize
@@ -107,7 +107,7 @@ class MyVideoCapture:
         c2 = int(hwidth*(col+1))
         
         print(hheight, hwidth)
-        print(r1, r2, c1, c2)
+        print(r1, r2, c1, c2, "quad", self.quad_num, "col:", col, "row:", row)
 
         quad = merged_frame[r1:r2, c1:c2]
         return quad
