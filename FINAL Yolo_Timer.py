@@ -14,6 +14,7 @@ import math
 #make it automatically go to the next camera / link to arrows / stop and go
 
 '''
+screenshot.txt is a necessary document required to load settings on startup
 screenshot.txt contains all saved vars in this order:
     0. Screenshot number (photonum)
     1. Click option ()
@@ -35,14 +36,11 @@ photonum = vars[0].strip()
 #Close an open file so memory does not get leaked and slow/crash program
 j.close()
 
-print("token:", token, "chat_id", chat_id)
-
 #For sendidng message and image to TELEGRAM
 def send_msg(text):
    global chat_id, token
    url_req = "https://api.telegram.org/bot" + token + "/sendMessage" + "?chat_id=" + chat_id + "&text=" + text 
    results = requests.get(url_req)
-   print(results.json())
 
 def send_img():
     global chat_id, token
@@ -50,7 +48,7 @@ def send_img():
     url_req = "https://api.telegram.org/bot" + token + "/sendPhoto" + "?chat_id=" + chat_id
     resp = requests.post(url_req ,files=files)
 
-#For security 
+#For security passwords/login
 def generate_key():
     return Fernet.generate_key()
 
@@ -63,19 +61,22 @@ def decrypt_password(key, encrypted_password):
     return f.decrypt(encrypted_password.encode()).decode()
 passwords = {}
 
+#Login window class
 class Application:
     def __init__(self, window):   
         self.key = generate_key()
 
         instructions = '''Please enter username and password for security reason'''
 
+        #creates window
         self.window=window
         self.window.title("Security Login")
         self.window.configure(bg="grey")
         self.window.resizable(False, False)
 
-
+        #frame that all components exist on
         center_frame = tk.Frame(self.window, bg="#d3d3d3")
+        #grid function says where to place an item in the 'grid' on the window
         center_frame.grid(row=0, column=0, padx=10, pady=10)
 
         instruction_label = tk.Label(center_frame, text=instructions, bg="#d3d3d3")
@@ -91,11 +92,11 @@ class Application:
         self.password_entry = tk.Entry(center_frame, show="*")
         self.password_entry.grid(row=3, column=1, padx=10, pady=5)
 
-
         add_button = tk.Button(center_frame, text="Login", command=self.login, height=1, width=10)
         add_button.grid(row=5, column=4, padx=10, pady=5)
         self.window.mainloop()
 
+    #fetch values and test against set password/username
     def login(self):
         service = self.service_entry.get()
         #username = username_entry.get()
@@ -119,11 +120,11 @@ class Application:
         else:
             messagebox.showwarning("Error", "Please fill in all the fields.")
 
-
+#main GUI pass
 class App:
     #Initialize
     def __init__(self, window, video_source=0):
-        global vars, num_cams
+        global vars, num_cams #globals
         
         #from number of cams, find max page number
         self.num_cams = num_cams
@@ -145,10 +146,11 @@ class App:
         self.window.geometry("1200x800") 
         self.window.resizable(False, False)
         
+        #frame for image
         self.frame = tk.Frame(self.window, width = 200, height = 200)
         self.frame.grid(row = 1, column = 0, sticky = W+N)
-        # open video source
 
+        #frame for buttons
         self.buttonframeleft = tk.Frame(self.window)
         self.buttonframeleft.grid(row = 2, column = 2, sticky = E+N)
         self.buttonframeright = tk.Frame(self.window)
@@ -163,13 +165,14 @@ class App:
         self.frame.grid_propagate(False)
         self.mouseDown = False
 
+        #canvas that the camera lies on
         self.canvas = tk.Canvas(window, width=self.video_captures[self.active_quad].width*2, height=self.video_captures[self.active_quad].height*3)
         self.canvas.pack()
         #self.canvas.bind("<B1-Motion>", self.paint)
         self.canvas.bind("<ButtonRelease-1>", self.toggleMouse)
         self.canvas.bind("<Button-1>", self.toggleMouse)
 
-
+        #buttons ! 
         self.btn_snapshot = tk.Button(self.buttonframeleft, text="snapshot", width=30, command=self.video_captures[self.active_quad].snapshot)
         self.btn_clearmask = tk.Button(self.buttonframeright, text="Clear Mask", width=30, command=self.clearmask)
         
@@ -177,8 +180,6 @@ class App:
         self.btn_snapshot.grid(row = 2, column = 5, sticky = W+N)     
         self.btn_clearmask.grid(row = 2, column = 1, sticky = W+N)
         
-        # Adjust size 
-
         #For Time
         self.slidertime = Scale(self.frame, from_=0, to=50, orient=HORIZONTAL, command=self.changeseconds)
         self.defaulttime = Button( self.frame , text = "Default", command=self.default_time, height=1, width=8)
@@ -240,6 +241,7 @@ class App:
         previouspage.grid(row = 2, column = 4, sticky = E+N)
         nextpage.grid(row = 2, column = 4, sticky = W+N)
 
+        #telegram msging setup
         self.token_entry = tk.Entry(self.frame)
         self.chat_id_entry = tk.Entry(self.frame)
         self.token_label = tk.Label(self.frame,text = "Telegram Token:")
@@ -247,6 +249,7 @@ class App:
         self.newchatid = tk.Button(self.frame,text="Change ChatID", command=self.updateid)
         self.newtoken = tk.Button(self.frame,text="Change Token", command=self.updatetoken)
 
+        #dropdown and button settings
         self.selected("")
         self.change = False
         self.page_num=1
@@ -257,6 +260,7 @@ class App:
         # Execute tkinter 
         self.window.mainloop() 
 
+    #go back a page in cameras
     def prevpage(self,e):
         if self.page_num!=1:
             self.page_num-=1
@@ -264,6 +268,7 @@ class App:
         else:
             print("Already at first page!")
 
+    #go forward a page in cameras
     def nextpage(self):
         if self.page_num!=self.max_page:
             self.page_num+=1
@@ -271,16 +276,19 @@ class App:
         else:
             print("Already at last page!")
 
+    #change time value
     def changeseconds(self, e):
         #read val off of slider and set as self.vid.seconds
         global seconds
         seconds = int(e)
         print("Timer length:", e, "seconds")
 
+    #second dropdown menu get the selected option
     def secondselect(self, event):
         global secondselect
         secondselect = self.click2.get()
     
+    #find mouse location n paint
     def toggleMouse(self, e):
         if not self.mouseDown:
             self.mouseDown = True
@@ -296,6 +304,7 @@ class App:
             print("releasing")
             self.paint()
 
+    #runs only on close/destruction of App
     def __del__(self):
         global vars, j, chat_id, token, seconds, photonum
         j.close()        
@@ -304,10 +313,10 @@ class App:
         l = open("screenshot.txt", "w")
         l.write(words)
 
+    #main dropdown menu get option
     def selected(self, event):
         global vars
         if self.clicked.get() == 'Detection':
-            print("Hi")
             self.defaulttime.grid_forget()
             self.slidertime.grid_forget()
             self.token_entry.grid_forget()
@@ -322,7 +331,6 @@ class App:
             self.drop2.grid(row=1, column=0, sticky=W+N)
 
         elif self.clicked.get() == 'Time':
-            print("kms")
             self.drop2.grid_forget()
             self.token_entry.grid_forget()
             self.token_label.grid_forget()
@@ -336,7 +344,6 @@ class App:
             self.defaulttime.grid(row = 1, column = 0, sticky = N+W)
 
         elif self.clicked.get() == 'Log Out':
-            print("oops bye")
             self.window.destroy()                               #what what what what what
             switch()
 
@@ -365,7 +372,6 @@ class App:
             self.newtoken.grid(row=3, column=1, sticky= W+N)
 
         else:
-            print("Bye")
             self.drop2.grid_forget()
             self.slidertime.grid_forget()
             self.defaulttime.grid_forget()
@@ -376,6 +382,7 @@ class App:
             self.newchatid.grid_forget()
             self.newtoken.grid_forget()
     
+    #telegram token and chat id update
     def updatetoken(self):
         global token   
         #get the info
@@ -399,9 +406,11 @@ class App:
 
         print("Telegram chatID changed")
 
+    #default button for timer
     def default_time(self):
         self.slidertime.set(5)
 
+    #painting by getting mouse location n drawing a rectangle
     def paint(self):
         self.video_captures[self.active_quad].imgMask = self.video_captures[self.active_quad].imgMask.copy()
 
@@ -409,14 +418,15 @@ class App:
 
         print("rectangle from", self.video_captures[self.active_quad].ix, self.video_captures[self.active_quad].iy, self.mousePt)
 
-
+    #delete the rectangle
     def clearmask(self):
         self.video_captures[self.active_quad].clearmask()
-        #self.vid.imgMask.fill(0)
 
+    #set threshold back to default
     def default_thres(self):
         self.sliderthres.set(50)
 
+    #update runs every self.delay amount of ms
     def update(self):
         page_vids = []
         page_vids = self.video_captures[(self.page_num*4-4):(self.page_num*4-1)]
@@ -437,12 +447,14 @@ class App:
         self.canvas.create_image(0, 0, image=self.photo, anchor=tk.NW)
     
         self.window.after(self.delay, self.update)
-        
+    
+    #put images together
     def concat_vh(self, list_2d):
         # return final image
         return cv2.vconcat([cv2.hconcat(list_h) 
                         for list_h in list_2d])
     
+    #put images together
     def assemble_grid(self, images):
         num_images = len(images)
         grid_size = int(np.sqrt(num_images))
@@ -459,6 +471,7 @@ class App:
     
         return merged_image
 
+#main camera class
 class MyVideoCapture:
     def __init__(self, quad_num, video_source=0):
         global vars, num_cams
@@ -466,9 +479,12 @@ class MyVideoCapture:
         self.num_cams = num_cams
         self.quad_num = quad_num
 
+        #get video source
         self.vid = cv2.VideoCapture(video_source)
         if not self.vid.isOpened():
             raise ValueError("Unable to open video source", video_source)
+        
+        #variable setup
         self.mousePt = (0, 0)
         self.runonce = True
         self.timer = datetime.datetime(2027, 1, 1, 1, 1, 1, 1)
@@ -479,7 +495,7 @@ class MyVideoCapture:
         self.click2 = "Select Option"
         self.seconds = 5
 
-
+        #set camera res
         w = 1280.0/4
         h = 720.0/4
         self.vid.set(cv2.CAP_PROP_FRAME_WIDTH, w)
@@ -491,6 +507,7 @@ class MyVideoCapture:
         self.height = self.vid.get(cv2.CAP_PROP_FRAME_HEIGHT)
         print("final res: ", self.width, self.height)
 
+        #image setups
         self.imgRef = np.zeros(
             (int(self.height), int(self.width), 3), dtype="uint8")
         self.imgComposite = np.zeros((int(self.height), int(
@@ -507,6 +524,7 @@ class MyVideoCapture:
         self.phototaken = False
         self.danger = False
 
+    #save a picture to files
     def snapshot(self):
         global photonum
         self.imgRef = self.imgIn.copy()
@@ -520,10 +538,12 @@ class MyVideoCapture:
             cv2.destroyAllWindows()
             print("Stream ended")
 
+    #put image together
     def concat_vh(self, list_2d):
         # return the final image
         return cv2.vconcat([cv2.hconcat(list_h) for list_h in list_2d])
     
+    #split the incoming frame into seperate video streams
     def split_frame(self, merged_frame):
         height, width, _ = merged_frame.shape
         #print("shape h:", height, "shape w:", width)
@@ -546,10 +566,9 @@ class MyVideoCapture:
         
         quad = merged_frame[r1:r2, c1:c2]
 
-
-
         return quad
 
+    #outputs a frame to be put in App
     def get_frame(self):
         global seconds
         self.seconds = seconds
@@ -557,6 +576,7 @@ class MyVideoCapture:
             ret, frame = self.vid.read()
             if ret:
                 # Detect Objects
+
                 # Load yolo
                 net = cv2.dnn.readNet("yolov3.weights", "yolov3.cfg")
 
@@ -567,22 +587,23 @@ class MyVideoCapture:
                 layer_name = net.getLayerNames()
                 output_layer = [layer_name[i - 1] for i in net.getUnconnectedOutLayers()]
                 colors = np.random.uniform(0, 255, size=(len(classes), 3))
-                drawing = False                                                      #what what what
+
+                #split frame and drawing
+                drawing = False
                 self.ix, self.iy = -1, -1
                 self.imgIn = self.split_frame(frame)
                 if self.click2 == "Select AOI":
                     frame = cv2.bitwise_and(self.imgIn, self.imgMask)
                 
+                #more yolo
                 blob = cv2.dnn.blobFromImage(
                     frame, 0.00392, (416, 416), (0, 0, 0), True, crop=False)
                 net.setInput(blob)
                 outs = net.forward(output_layer)
-                #fourcc = cv2.VideoWriter_fourcc('m','p','4','v')
-                #writer = cv2.VideoWriter('security.mp4', fourcc, 2, (640,480))
                 
                 print("self.click2", self.click2)
 
-                # Showing Information on the screen
+                # more more yolo
                 class_ids = []
                 confidences = []
                 boxes = []
@@ -620,6 +641,7 @@ class MyVideoCapture:
                         print(label)
                         confidence = f'{confidences[i]:.3f}'
 
+                        #simple rules for ladder detection, if one person in frame then alert after seconds amount of time
                         if ((presence == "person" and label == "cell phone") or (presence == "cell phone" and label == "person")):
                             if count == 1:
                                 print("Test Succeeded - Detecting One Person")
@@ -643,12 +665,10 @@ class MyVideoCapture:
                                 print("timer time is:", self.timer)
                                 print("Time in", str(self.seconds),  "seconds:", str(self.timer))
                                 self.runonce = False
-                                print("runounce false")
                             if self.current >= self.timer:
-                                print("creaming crying while")
                                 
                                 if self.timesup == True:    
-                                    print("life is hell AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
+                                    print("time up")
                                     color = colors[i]
                                     cv2.rectangle(
                                         frame, (x, y), (x + w, y + h), color, 1)
@@ -669,6 +689,7 @@ class MyVideoCapture:
                     #writer.release()
                     print("freedom")
 
+                #convert image to rgb since its otherwise blue
                 self.dangerous = self.danger
                 self.danger = False
                 imgIn = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
@@ -702,6 +723,7 @@ class MyVideoCapture:
         else:
             return (ret, None)
 
+#change from Application (login) to App (main gui)
 def switch():
     global loggedin, window
     if loggedin:
